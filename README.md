@@ -1,4 +1,4 @@
-# EasyRide
+# EasyRide 🚗
 
 EasyRide is a ride-sharing platform connecting passengers and drivers using React and Firebase. It allows users to sign up as either drivers or passengers, book rides, manage bookings, and update their profiles. The application leverages Firebase Authentication and Firestore for secure user management and real-time data updates.
 
