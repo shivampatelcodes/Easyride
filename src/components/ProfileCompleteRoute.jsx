@@ -20,8 +20,10 @@ const ProfileCompleteRoute = ({ children }) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           console.log("User Data:", data);
-          // Use a case-insensitive check for role
-          if (data.role && data.role.toLowerCase() === "passenger") {
+          // For drivers, assume profile is complete; for passengers, optionally check required fields.
+          if (data.role && data.role.toLowerCase() === "driver") {
+            setProfileComplete(true);
+          } else if (data.role && data.role.toLowerCase() === "passenger") {
             setProfileComplete(true);
           } else {
             setProfileComplete(!!(data.fullName && data.phone && data.address));
