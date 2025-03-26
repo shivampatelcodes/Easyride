@@ -69,7 +69,7 @@ const Navbar = ({ role, setRole }) => {
               </Link>
             ) : (
               <Link
-                to="/bookings"
+                to="/passenger-bookings"
                 className="mr-4 text-blue-500 hover:underline"
               >
                 Bookings

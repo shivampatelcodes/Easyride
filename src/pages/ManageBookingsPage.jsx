@@ -24,10 +24,10 @@ const ManageBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [filterDate, setFilterDate] = useState("");
-  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
   useEffect(() => {
@@ -41,37 +41,29 @@ const ManageBookingsPage = () => {
       }
     };
 
-    const fetchBookingsWithRideDates = () => {
-      const q = query(
-        collection(db, "bookings"),
-        where("driverId", "==", auth.currentUser.uid)
-      );
-      const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-        // Create an array of booking objects with ride date attached
-        const bookingsData = await Promise.all(
-          querySnapshot.docs.map(async (docSnap) => {
-            const booking = { id: docSnap.id, ...docSnap.data() };
-            // If date is not stored in booking, fetch it from rides collection
-            if (!booking.date && booking.rideId) {
-              const rideRef = doc(db, "rides", booking.rideId);
-              const rideDoc = await getDoc(rideRef);
-              if (rideDoc.exists()) {
-                booking.date = rideDoc.data().date;
-              }
+    const bookingsQuery = query(
+      collection(db, "bookings"),
+      where("driverId", "==", auth.currentUser.uid)
+    );
+    const unsubscribe = onSnapshot(bookingsQuery, async (querySnapshot) => {
+      const bookingsData = await Promise.all(
+        querySnapshot.docs.map(async (docSnap) => {
+          const booking = { id: docSnap.id, ...docSnap.data() };
+          if (!booking.date && booking.rideId) {
+            const rideRef = doc(db, "rides", booking.rideId);
+            const rideDoc = await getDoc(rideRef);
+            if (rideDoc.exists()) {
+              booking.date = rideDoc.data().date;
             }
-            return booking;
-          })
-        );
-        setBookings(bookingsData);
-        setLoading(false);
-      });
-
-      return unsubscribe;
-    };
+          }
+          return booking;
+        })
+      );
+      setBookings(bookingsData);
+      setLoading(false);
+    });
 
     fetchUserRole();
-    const unsubscribe = fetchBookingsWithRideDates();
-
     return () => unsubscribe();
   }, []);
 
@@ -80,7 +72,7 @@ const ManageBookingsPage = () => {
       const bookingRef = doc(db, "bookings", bookingId);
       await updateDoc(bookingRef, { status: "Accepted" });
       setModalMessage("Booking accepted!");
-      setAcceptModalOpen(true);
+      setFeedbackModalOpen(true);
     } catch (error) {
       console.error("Error accepting booking:", error);
     }
@@ -88,7 +80,7 @@ const ManageBookingsPage = () => {
 
   const handleRejectBooking = (bookingId) => {
     setSelectedBookingId(bookingId);
-    setIsModalOpen(true);
+    setIsRejectModalOpen(true);
   };
 
   const confirmRejectBooking = async () => {
@@ -98,9 +90,9 @@ const ManageBookingsPage = () => {
       setBookings(
         bookings.filter((booking) => booking.id !== selectedBookingId)
       );
-      setIsModalOpen(false);
+      setIsRejectModalOpen(false);
       setModalMessage("Booking rejected and deleted!");
-      setAcceptModalOpen(true);
+      setFeedbackModalOpen(true);
     } catch (error) {
       console.error("Error rejecting booking:", error);
     }
@@ -108,117 +100,111 @@ const ManageBookingsPage = () => {
 
   const filteredBookings = filterDate
     ? bookings.filter((booking) => {
-        // Parse the attached date field from rides collection
-        const bookingDate = booking.date?.toDate
-          ? booking.date.toDate().toISOString().split("T")[0]
-          : booking.date && booking.date.seconds
-          ? new Date(booking.date.seconds * 1000).toISOString().split("T")[0]
-          : "";
+        let bookingDate = "";
+        if (booking.date && booking.date.toDate) {
+          bookingDate = booking.date.toDate().toISOString().split("T")[0];
+        } else if (booking.date && booking.date.seconds) {
+          bookingDate = new Date(booking.date.seconds * 1000)
+            .toISOString()
+            .split("T")[0];
+        }
         return bookingDate === filterDate;
       })
     : bookings;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen text-xl">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar role={role} setRole={setRole} />
-      <main>
-        <div className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              Manage Bookings
-            </h2>
-            <div className="mt-4">
-              <label
-                htmlFor="filterDate"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Filter by Date
-              </label>
-              <input
-                type="date"
-                id="filterDate"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-            <div className="mt-4 space-y-4">
-              {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking, index) => (
-                  <div
-                    key={index}
-                    className="p-4 bg-gray-100 rounded-md shadow-sm"
-                  >
-                    <p>
-                      <strong>Passenger:</strong> {booking.passengerEmail}
-                    </p>
-                    <p>
-                      <strong>Ride:</strong> {booking.rideId}
-                    </p>
-                    <p>
-                      <strong>Date:</strong>{" "}
-                      {(() => {
-                        if (
-                          booking.date &&
-                          typeof booking.date.toDate === "function"
-                        ) {
-                          return booking.date.toDate().toLocaleDateString();
-                        } else if (booking.date && booking.date.seconds) {
-                          return new Date(
-                            booking.date.seconds * 1000
-                          ).toLocaleDateString();
-                        } else if (typeof booking.date === "string") {
-                          return new Date(booking.date).toLocaleDateString();
-                        } else {
-                          return "Invalid Date";
-                        }
-                      })()}
-                    </p>
-                    <p>
-                      <strong>Status:</strong> {booking.status}
-                    </p>
-                    {booking.status !== "Accepted" && (
-                      <>
-                        <button
-                          onClick={() => handleAcceptBooking(booking.id)}
-                          className="px-4 py-2 mt-2 mr-2 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleRejectBooking(booking.id)}
-                          className="px-4 py-2 mt-2 text-white bg-red-500 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p>No bookings found.</p>
-              )}
-            </div>
+      <header className="bg-white shadow">
+        <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-800">Manage Bookings</h2>
+          <div className="mt-4">
+            <label
+              htmlFor="filterDate"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Filter by Date
+            </label>
+            <input
+              type="date"
+              id="filterDate"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="mt-1 block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
         </div>
+      </header>
+      <main className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        {filteredBookings.length ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
+              >
+                <p className="mb-1">
+                  <span className="font-semibold">Passenger:</span>{" "}
+                  {booking.passengerEmail}
+                </p>
+                {booking.rideId && (
+                  <p className="mb-1">
+                    <span className="font-semibold">Ride ID:</span>{" "}
+                    {booking.rideId}
+                  </p>
+                )}
+                <p className="mb-1">
+                  <span className="font-semibold">Date:</span>{" "}
+                  {booking.date && booking.date.toDate
+                    ? booking.date.toDate().toLocaleDateString()
+                    : booking.date && booking.date.seconds
+                    ? new Date(booking.date.seconds * 1000).toLocaleDateString()
+                    : "N/A"}
+                </p>
+                <p className="mb-4">
+                  <span className="font-semibold">Status:</span>{" "}
+                  {booking.status}
+                </p>
+                {booking.status !== "Accepted" && (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleAcceptBooking(booking.id)}
+                      className="flex-1 px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleRejectBooking(booking.id)}
+                      className="flex-1 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-600">No bookings found.</p>
+        )}
       </main>
       <ConfirmationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
         onConfirm={confirmRejectBooking}
         message="Are you sure you want to reject and delete this booking?"
       />
       <Modal
-        isOpen={acceptModalOpen}
-        onClose={() => setAcceptModalOpen(false)}
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
         message={modalMessage}
       />
     </div>
