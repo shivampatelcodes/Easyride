@@ -28,7 +28,7 @@ const Navbar = ({ role, setRole }) => {
   };
 
   return (
-    <header className="bg-white shadow">
+    <header className="bg-white dark:bg-gray-800 shadow">
       <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 flex justify-between items-center">
         <div className="flex items-center">
           <button

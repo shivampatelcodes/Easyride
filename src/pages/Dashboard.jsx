@@ -117,21 +117,21 @@ const Dashboard = () => {
   const userName = email.split("@")[0];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
       <main>
         <div className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">
-            <h2 className="text-2xl font-semibold text-gray-800">
+          <div className="px-4 py-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg sm:px-10">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
               Welcome, {userName}!
             </h2>
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-gray-600 dark:text-gray-300">
               You are logged in as a <span className="font-bold">{role}</span>.
             </p>
 
             {/* Search & Book Rides */}
             <div className="mt-8">
-              <h3 className="text-xl font-semibold text-gray-800">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
                 Search & Book Rides
               </h3>
               <div className="mt-4 space-y-4">
@@ -142,7 +142,7 @@ const Dashboard = () => {
                   onChange={(e) =>
                     setSearchParams({ ...searchParams, origin: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                 />
                 <input
                   type="text"
@@ -154,7 +154,7 @@ const Dashboard = () => {
                       destination: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                 />
                 <input
                   type="date"
@@ -162,7 +162,7 @@ const Dashboard = () => {
                   onChange={(e) =>
                     setSearchParams({ ...searchParams, date: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                 />
                 <button
                   onClick={handleSearch}

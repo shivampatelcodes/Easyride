@@ -121,15 +121,17 @@ const ManageBookingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
-      <header className="bg-white shadow">
+      <header className="bg-white dark:bg-gray-800 shadow">
         <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-800">Manage Bookings</h2>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+            Manage Bookings
+          </h2>
           <div className="mt-4">
             <label
               htmlFor="filterDate"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Filter by Date
             </label>
@@ -138,7 +140,7 @@ const ManageBookingsPage = () => {
               id="filterDate"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="mt-1 block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
             />
           </div>
         </div>
@@ -149,7 +151,7 @@ const ManageBookingsPage = () => {
             {filteredBookings.map((booking) => (
               <div
                 key={booking.id}
-                className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
               >
                 <p className="mb-1">
                   <span className="font-semibold">Passenger:</span>{" "}

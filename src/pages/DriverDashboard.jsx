@@ -9,6 +9,9 @@ import {
   collection,
   addDoc,
   Timestamp,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
@@ -34,20 +37,33 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       const user = auth.currentUser;
       if (user) {
+        // Fetch user details
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setEmail(userData.email);
           setRole(userData.role);
         }
+
+        // (Optional) Driver bookings retrieval code can remain here for other logic
+        const q = query(
+          collection(db, "bookings"),
+          where("driverId", "==", user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+        // Removed display of bookings below the trip posting section
+        // const bookingsData = querySnapshot.docs.map((doc) => ({
+        //   id: doc.id,
+        //   ...doc.data(),
+        // }));
       }
       setLoading(false);
     };
 
-    fetchUserData();
+    fetchData();
   }, []);
 
   const handlePostTrip = async () => {
@@ -89,7 +105,7 @@ const DriverDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
         Loading...
       </div>
     );
@@ -98,21 +114,21 @@ const DriverDashboard = () => {
   const userName = email.split("@")[0];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
       <main>
         <div className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">
-            <h2 className="text-2xl font-semibold text-gray-800">
+          <div className="px-4 py-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg sm:px-10">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
               Welcome, {userName}!
             </h2>
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-gray-600 dark:text-gray-300">
               You are logged in as a <span className="font-bold">{role}</span>.
             </p>
 
             {/* Post Trips */}
             <div className="mt-8">
-              <h3 className="text-xl font-semibold text-gray-800">
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
                 Post Trips
               </h3>
               <div className="mt-4 space-y-4">
@@ -126,7 +142,7 @@ const DriverDashboard = () => {
                       driverName: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <input
@@ -139,7 +155,7 @@ const DriverDashboard = () => {
                       driverMobile: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <input
@@ -149,7 +165,7 @@ const DriverDashboard = () => {
                   onChange={(e) =>
                     setTripDetails({ ...tripDetails, origin: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <input
@@ -162,7 +178,7 @@ const DriverDashboard = () => {
                       destination: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <input
@@ -171,7 +187,7 @@ const DriverDashboard = () => {
                   onChange={(e) =>
                     setTripDetails({ ...tripDetails, date: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <input
@@ -181,7 +197,7 @@ const DriverDashboard = () => {
                   onChange={(e) =>
                     setTripDetails({ ...tripDetails, seats: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
                 <button
@@ -192,6 +208,7 @@ const DriverDashboard = () => {
                 </button>
               </div>
             </div>
+            {/* Driver Bookings section removed */}
           </div>
         </div>
       </main>

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import Navbar from "../components/Navbar";
+import { ThemeContext } from "../context/ThemeContext";
 
 const auth = getAuth();
 const db = getFirestore();
@@ -15,9 +16,10 @@ const Settings = () => {
     address: "",
   });
   const [role, setRole] = useState("");
-  const [activeTab, setActiveTab] = useState("general"); // "profile", "account", "privacy", etc.
+  const [activeTab, setActiveTab] = useState("general");
   const [showMobileOptions, setShowMobileOptions] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -44,7 +46,6 @@ const Settings = () => {
     navigate("/signin");
   };
 
-  // Handlers for profile form changes and save
   const handleChange = (e) => {
     setDetails({
       ...details,
@@ -62,7 +63,6 @@ const Settings = () => {
           phone: details.phone,
           address: details.address,
         });
-        // After saving, navigate to the dashboard so ProfileCompleteRoute doesn't keep you on settings
         navigate("/dashboard");
       } catch (error) {
         console.error("Error updating profile:", error);
@@ -72,7 +72,6 @@ const Settings = () => {
 
   if (loading) return <div>Loading...</div>;
 
-  // Render settings content based on activeTab
   const renderContent = () => {
     switch (activeTab) {
       case "profile":
@@ -81,53 +80,41 @@ const Settings = () => {
             <h2 className="text-2xl font-bold mb-4">Profile</h2>
             <form onSubmit={handleProfileSave} className="space-y-4">
               <div>
-                <label
-                  htmlFor="fullName"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Full Name
                 </label>
                 <input
                   type="text"
-                  id="fullName"
                   name="fullName"
                   value={details.fullName}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
               <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Phone Number
                 </label>
                 <input
                   type="tel"
-                  id="phone"
                   name="phone"
                   value={details.phone}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
               <div>
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Address
                 </label>
                 <input
                   type="text"
-                  id="address"
                   name="address"
                   value={details.address}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
@@ -144,36 +131,36 @@ const Settings = () => {
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Account Settings</h2>
-            <p>
-              This section is under construction. (Add account-specific settings
-              here.)
-            </p>
+            <p>This section is under construction.</p>
           </div>
         );
       case "privacy":
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">Privacy</h2>
-            <p>
-              This section is under construction. (Add privacy-related settings
-              here.)
-            </p>
+            <p>This section is under construction.</p>
           </div>
         );
       default:
         return (
           <div>
             <h2 className="text-2xl font-bold mb-4">General Settings</h2>
-            <p>
-              Select an option from the settings list to view or edit your
-              settings.
-            </p>
+            <p>Select an option from the list.</p>
+            {/* Dark Mode Toggle */}
+            <div className="mt-6">
+              <h3 className="text-xl font-bold mb-2">Theme</h3>
+              <button
+                onClick={toggleTheme}
+                className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2"
+              >
+                Switch to {theme === "light" ? "Dark" : "Light"} Mode
+              </button>
+            </div>
           </div>
         );
     }
   };
 
-  // Mobile options overlay: a vertical list of settings options.
   const mobileOptionsOverlay = (
     <div className="fixed inset-0 z-50 flex flex-col bg-white p-6 overflow-y-auto">
       <h2 className="text-2xl font-bold mb-4">Settings Options</h2>
@@ -233,10 +220,9 @@ const Settings = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* On small screens, show a button that opens the settings options list */}
         <div className="lg:hidden">
           <button
             onClick={() => setShowMobileOptions(true)}
@@ -245,10 +231,9 @@ const Settings = () => {
             Show Settings Options
           </button>
         </div>
-        {/* Sidebar for larger screens */}
         <div className="hidden lg:flex lg:space-x-6">
           <aside className="lg:w-1/4">
-            <div className="bg-white shadow rounded-md p-6">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-md p-6">
               <h2 className="text-xl font-bold mb-4">Settings</h2>
               <ul className="space-y-3">
                 <li>
@@ -292,14 +277,12 @@ const Settings = () => {
               </div>
             </div>
           </aside>
-          {/* Main Content for larger screens */}
-          <section className="lg:w-3/4 bg-white shadow rounded-md p-6">
+          <section className="lg:w-3/4 bg-white dark:bg-gray-800 shadow rounded-md p-6">
             {renderContent()}
           </section>
         </div>
-        {/* For small screens, display the selected content */}
         <div className="lg:hidden">
-          <section className="bg-white shadow rounded-md p-6">
+          <section className="bg-white dark:bg-gray-800 shadow rounded-md p-6">
             {renderContent()}
           </section>
         </div>

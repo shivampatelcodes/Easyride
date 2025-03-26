@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "./firebaseConfig";
 import App from "./App.jsx";
+import { ThemeProvider } from "./context/ThemeContext";
 
 export const AuthContext = createContext(null);
 const db = getFirestore();
@@ -39,9 +40,11 @@ const RootComponent = () => {
 
   return (
     <StrictMode>
-      <AuthContext.Provider value={user}>
-        <App />
-      </AuthContext.Provider>
+      <ThemeProvider>
+        <AuthContext.Provider value={user}>
+          <App />
+        </AuthContext.Provider>
+      </ThemeProvider>
     </StrictMode>
   );
 };

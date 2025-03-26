@@ -83,24 +83,26 @@ const SearchResults = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
-      <header className="bg-white shadow">
+      <header className="bg-white dark:bg-gray-800 shadow">
         <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Search Results</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Search Results
+          </h1>
         </div>
       </header>
       <main>
         <div className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">
-            <h2 className="text-2xl font-semibold text-gray-800">
+          <div className="px-4 py-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg sm:px-10">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
               Available Rides
             </h2>
             <div className="mt-4 space-y-4">
@@ -108,7 +110,7 @@ const SearchResults = () => {
                 rides.map((ride, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-gray-100 rounded-md shadow-sm"
+                    className="p-4 bg-gray-100 dark:bg-gray-700 rounded-md shadow-sm"
                   >
                     <p>
                       <strong>Origin:</strong> {ride.origin}
