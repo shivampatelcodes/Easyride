@@ -24,82 +24,95 @@ const DriverDashboard = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  // Updated state: removed driverName and driverMobile; added price field.
   const [tripDetails, setTripDetails] = useState({
     origin: "",
     destination: "",
     date: "",
     seats: "",
-    driverName: "",
-    driverMobile: "",
+    price: "",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const navigate = useNavigate();
 
+  // Fetch the current user data, including email and role.
   useEffect(() => {
     const fetchData = async () => {
       const user = auth.currentUser;
       if (user) {
-        // Fetch user details
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setEmail(userData.email);
           setRole(userData.role);
+          console.log("User role from Firestore:", userData.role);
         }
-
-        // (Optional) Driver bookings retrieval code can remain here for other logic
-        const q = query(
-          collection(db, "bookings"),
-          where("driverId", "==", user.uid)
-        );
-        const querySnapshot = await getDocs(q);
-        // Removed display of bookings below the trip posting section
-        // const bookingsData = querySnapshot.docs.map((doc) => ({
-        //   id: doc.id,
-        //   ...doc.data(),
-        // }));
+        // (Optional) Driver bookings retrieval code can remain here if needed.
       }
       setLoading(false);
     };
-
     fetchData();
   }, []);
 
+  // Function to post a trip. It creates a ride document and then (optionally) a booking.
   const handlePostTrip = async () => {
-    const { origin, destination, date, seats, driverName, driverMobile } =
-      tripDetails;
-    if (
-      !origin ||
-      !destination ||
-      !date ||
-      !seats ||
-      !driverName ||
-      !driverMobile
-    ) {
+    const { origin, destination, date, seats, price } = tripDetails;
+    if (!origin || !destination || !date || !seats || !price) {
       setModalMessage("Please fill out all fields before posting the trip.");
       setIsModalOpen(true);
       return;
     }
 
     try {
-      await addDoc(collection(db, "rides"), {
+      const rideDocRef = await addDoc(collection(db, "rides"), {
         ...tripDetails,
         date: Timestamp.fromDate(new Date(date)),
         driverId: auth.currentUser.uid,
         driverEmail: auth.currentUser.email,
         status: "available",
       });
+      // Optionally, create a booking document.
       await addDoc(collection(db, "bookings"), {
         date: Timestamp.fromDate(new Date(date)),
-        // the rest of your booking data
+        // Additional booking fields can be added.
       });
       setModalMessage("Trip posted successfully!");
       setIsModalOpen(true);
+
+      // Notify all passengers about the new ride.
+      notifyPassengers({
+        origin,
+        destination,
+        rideId: rideDocRef.id,
+      });
     } catch (error) {
       console.error("Error posting trip: ", error);
       setModalMessage("Error posting trip. Please try again.");
       setIsModalOpen(true);
+    }
+  };
+
+  // Function to notify all passengers by creating a notification for each.
+  // Each notification includes a title with a serial number.
+  const notifyPassengers = async (rideData) => {
+    try {
+      const passengersQuery = query(
+        collection(db, "users"),
+        where("role", "==", "passenger")
+      );
+      const querySnapshot = await getDocs(passengersQuery);
+      querySnapshot.forEach(async (userDoc, index) => {
+        await addDoc(collection(db, "notifications"), {
+          recipient: userDoc.id,
+          title: `Notification #${index + 1}`,
+          text: `New ride from ${rideData.origin} to ${rideData.destination} has been posted!`,
+          link: "/search-results",
+          timestamp: Timestamp.now(),
+        });
+      });
+    } catch (error) {
+      console.error("Error notifying passengers:", error);
     }
   };
 
@@ -111,6 +124,7 @@ const DriverDashboard = () => {
     );
   }
 
+  // Display a welcome message using the part of the email before the "@"
   const userName = email.split("@")[0];
 
   return (
@@ -126,38 +140,12 @@ const DriverDashboard = () => {
               You are logged in as a <span className="font-bold">{role}</span>.
             </p>
 
-            {/* Post Trips */}
+            {/* Post Trips Section */}
             <div className="mt-8">
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
                 Post Trips
               </h3>
               <div className="mt-4 space-y-4">
-                <input
-                  type="text"
-                  placeholder="Driver Name"
-                  value={tripDetails.driverName}
-                  onChange={(e) =>
-                    setTripDetails({
-                      ...tripDetails,
-                      driverName: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Driver Mobile"
-                  value={tripDetails.driverMobile}
-                  onChange={(e) =>
-                    setTripDetails({
-                      ...tripDetails,
-                      driverMobile: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  required
-                />
                 <input
                   type="text"
                   placeholder="Origin"
@@ -200,6 +188,16 @@ const DriverDashboard = () => {
                   className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
                   required
                 />
+                <input
+                  type="number"
+                  placeholder="Price"
+                  value={tripDetails.price}
+                  onChange={(e) =>
+                    setTripDetails({ ...tripDetails, price: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  required
+                />
                 <button
                   onClick={handlePostTrip}
                   className="w-full px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -208,7 +206,6 @@ const DriverDashboard = () => {
                 </button>
               </div>
             </div>
-            {/* Driver Bookings section removed */}
           </div>
         </div>
       </main>

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
 
@@ -12,24 +12,29 @@ const db = getFirestore(app);
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  // Each notification now has a "link" property to indicate its target page.
+  // Each notification now has a "link" property for its target page.
   const [notifications, setNotifications] = useState([
     { id: 1, text: "Your ride has been accepted!", link: "/manage-bookings" },
     { id: 2, text: "New trip posted near you.", link: "/driver-dashboard" },
   ]);
+  // Track if there are new notifications to show the dot
+  const [hasNew, setHasNew] = useState(notifications.length > 0);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
-  // Optionally you can leave toggleRole if needed elsewhere; however, the switch button is removed.
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
 
   const handleToggleNotifications = () => {
+    // When opening the dropdown, mark the notifications as "seen"
+    if (!isNotifOpen) {
+      setHasNew(false);
+    }
     setIsNotifOpen((prev) => !prev);
   };
 
-  // When a notification is clicked, navigate to its specified route and close the dropdown.
+  // When a notification is clicked, navigate and close the dropdown.
   const handleNotificationClick = (notif) => {
     setIsNotifOpen(false);
     navigate(notif.link);
@@ -40,6 +45,7 @@ const Navbar = ({ role, setRole }) => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setIsNotifOpen(false);
+        setHasNew(false); // Mark notifications as seen when closed.
       }
     };
     if (isNotifOpen) {
@@ -49,6 +55,13 @@ const Navbar = ({ role, setRole }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isNotifOpen]);
+
+  // If new notifications are added later, update hasNew.
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setHasNew(true);
+    }
+  }, [notifications]);
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow">
@@ -99,12 +112,10 @@ const Navbar = ({ role, setRole }) => {
                 Bookings
               </Link>
             )}
-            {/* The Switch Dashboard button has been removed */}
           </nav>
         </div>
         {/* Right side: Notifications and Settings */}
-        <div className="hidden lg:flex items-center space-x-4">
-          {/* Notifications Button */}
+        <div className=" lg:flex items-center space-x-4">
           <div className="relative" ref={notifRef}>
             <button
               onClick={handleToggleNotifications}
@@ -124,7 +135,7 @@ const Navbar = ({ role, setRole }) => {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 ></path>
               </svg>
-              {notifications.length > 0 && (
+              {hasNew && (
                 <span className="absolute top-0 right-0 inline-block h-2 w-2 rounded-full bg-red-600"></span>
               )}
             </button>
@@ -229,7 +240,6 @@ const Navbar = ({ role, setRole }) => {
                   >
                     Settings
                   </button>
-                  {/* Removed mobile dashboard switch button */}
                 </nav>
               </div>
             </div>
