@@ -49,4 +49,10 @@ const RootComponent = () => {
   );
 };
 
-createRoot(document.getElementById("root")).render(<RootComponent />);
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </StrictMode>
+);

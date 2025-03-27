@@ -1,11 +1,6 @@
-import  { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { getAuth } from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import Navbar from "../components/Navbar";
 import { app } from "../firebaseConfig";
 
@@ -70,6 +65,12 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <div className="p-4 mt-4 bg-blue-200 dark:bg-pink-200">
+        Test:{" "}
+        {document.documentElement.classList.contains("dark")
+          ? "Dark is active"
+          : "Light is active"}
+      </div>  
       <Navbar role={role} setRole={setRole} />
       <main className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">

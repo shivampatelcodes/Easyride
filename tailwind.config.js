@@ -1,6 +1,9 @@
 /* eslint-env node */
-const module = {};
-module.exports = {
-  darkMode: "class", // or ['class']
-  // ... existing config
+export default {
+  darkMode: "class", // Ensure this is set to "class"
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"], // Ensure all your files are included
+  theme: {
+    extend: {},
+  },
+  plugins: [],
 };

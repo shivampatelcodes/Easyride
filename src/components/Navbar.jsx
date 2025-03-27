@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
@@ -11,6 +11,13 @@ const db = getFirestore(app);
 
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  // For demonstration, using a simulated list of notifications.
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "Your ride has been accepted!" },
+    { id: 2, text: "New trip posted near you." },
+  ]);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
 
   const toggleRole = async () => {
@@ -27,9 +34,29 @@ const Navbar = ({ role, setRole }) => {
     setIsDrawerOpen(!isDrawerOpen);
   };
 
+  const handleToggleNotifications = () => {
+    setIsNotifOpen((prev) => !prev);
+  };
+
+  // Close notifications dropdown if clicking outside it.
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifOpen(false);
+      }
+    };
+    if (isNotifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNotifOpen]);
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow">
       <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 flex justify-between items-center">
+        {/* Left side: Logo and Navigation Links */}
         <div className="flex items-center">
           <button
             className="text-gray-500 focus:outline-none lg:hidden"
@@ -83,8 +110,56 @@ const Navbar = ({ role, setRole }) => {
             </button>
           </nav>
         </div>
-        {/* Rightmost Profile Icon */}
-        <div className="hidden lg:flex items-center">
+        {/* Right side: Notifications and Settings */}
+        <div className="hidden lg:flex items-center space-x-4">
+          {/* Notifications Button */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={handleToggleNotifications}
+              className="relative p-2 text-gray-500 focus:outline-none"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                ></path>
+              </svg>
+              {/* Red dot on bell when there are notifications */}
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 inline-block h-2 w-2 rounded-full bg-red-600"></span>
+              )}
+            </button>
+            {/* Notifications Dropdown */}
+            {isNotifOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20">
+                <div className="p-4">
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className="text-gray-800 dark:text-gray-100 text-sm py-1 border-b last:border-0"
+                      >
+                        {notif.text}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                      No notifications
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Settings Icon */}
           <Link
             to="/settings"
             className="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 text-gray-500 hover:text-blue-500"
@@ -106,6 +181,7 @@ const Navbar = ({ role, setRole }) => {
           </Link>
         </div>
       </div>
+      {/* Mobile Drawer Menu */}
       {isDrawerOpen && (
         <div className="lg:hidden">
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
@@ -156,14 +232,12 @@ const Navbar = ({ role, setRole }) => {
                       Bookings
                     </Link>
                   )}
-                  {/* Settings link removed from mobile drawer if desired.
-                      If you want to include it here, you can add an extra item. */}
                   <button
-                    // onClick={() => {
-                    //   navigate("/settings");
-                    //   toggleDrawer();
-                    // }}
                     className="block w-full text-left px-4 py-2 text-gray-500 hover:underline"
+                    onClick={() => {
+                      // You might set active tab for mobile settings here.
+                      toggleDrawer();
+                    }}
                   >
                     Settings
                   </button>
@@ -174,8 +248,7 @@ const Navbar = ({ role, setRole }) => {
                     }}
                     className="block w-full text-left px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    Switch to {role === "driver" ? "Passenger" : "Driver"}{" "}
-                    Dashboard
+                    Switch to {role === "driver" ? "Passenger" : "Driver"} Dashboard
                   </button>
                 </nav>
               </div>
