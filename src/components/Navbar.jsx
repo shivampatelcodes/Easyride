@@ -12,24 +12,15 @@ const db = getFirestore(app);
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  // For demonstration, using a simulated list of notifications.
+  // Each notification now has a "link" property to indicate its target page.
   const [notifications, setNotifications] = useState([
-    { id: 1, text: "Your ride has been accepted!" },
-    { id: 2, text: "New trip posted near you." },
+    { id: 1, text: "Your ride has been accepted!", link: "/manage-bookings" },
+    { id: 2, text: "New trip posted near you.", link: "/driver-dashboard" },
   ]);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
-  const toggleRole = async () => {
-    const newRole = role === "driver" ? "passenger" : "driver";
-    const user = auth.currentUser;
-    if (user) {
-      await updateDoc(doc(db, "users", user.uid), { role: newRole });
-      setRole(newRole);
-      navigate(newRole === "driver" ? "/driver-dashboard" : "/dashboard");
-    }
-  };
-
+  // Optionally you can leave toggleRole if needed elsewhere; however, the switch button is removed.
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
@@ -38,7 +29,13 @@ const Navbar = ({ role, setRole }) => {
     setIsNotifOpen((prev) => !prev);
   };
 
-  // Close notifications dropdown if clicking outside it.
+  // When a notification is clicked, navigate to its specified route and close the dropdown.
+  const handleNotificationClick = (notif) => {
+    setIsNotifOpen(false);
+    navigate(notif.link);
+  };
+
+  // Close notifications dropdown when clicking outside.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -102,12 +99,7 @@ const Navbar = ({ role, setRole }) => {
                 Bookings
               </Link>
             )}
-            <button
-              onClick={toggleRole}
-              className="ml-4 px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Switch to {role === "driver" ? "Passenger" : "Driver"} Dashboard
-            </button>
+            {/* The Switch Dashboard button has been removed */}
           </nav>
         </div>
         {/* Right side: Notifications and Settings */}
@@ -132,12 +124,10 @@ const Navbar = ({ role, setRole }) => {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 ></path>
               </svg>
-              {/* Red dot on bell when there are notifications */}
               {notifications.length > 0 && (
                 <span className="absolute top-0 right-0 inline-block h-2 w-2 rounded-full bg-red-600"></span>
               )}
             </button>
-            {/* Notifications Dropdown */}
             {isNotifOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20">
                 <div className="p-4">
@@ -145,7 +135,8 @@ const Navbar = ({ role, setRole }) => {
                     notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className="text-gray-800 dark:text-gray-100 text-sm py-1 border-b last:border-0"
+                        onClick={() => handleNotificationClick(notif)}
+                        className="cursor-pointer text-gray-800 dark:text-gray-100 text-sm py-1 border-b last:border-0 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         {notif.text}
                       </div>
@@ -225,7 +216,7 @@ const Navbar = ({ role, setRole }) => {
                     </Link>
                   ) : (
                     <Link
-                      to="/bookings"
+                      to="/passenger-bookings"
                       className="block px-4 py-2 text-blue-500 hover:underline"
                       onClick={toggleDrawer}
                     >
@@ -234,22 +225,11 @@ const Navbar = ({ role, setRole }) => {
                   )}
                   <button
                     className="block w-full text-left px-4 py-2 text-gray-500 hover:underline"
-                    onClick={() => {
-                      // You might set active tab for mobile settings here.
-                      toggleDrawer();
-                    }}
+                    onClick={toggleDrawer}
                   >
                     Settings
                   </button>
-                  <button
-                    onClick={() => {
-                      toggleRole();
-                      toggleDrawer();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    Switch to {role === "driver" ? "Passenger" : "Driver"} Dashboard
-                  </button>
+                  {/* Removed mobile dashboard switch button */}
                 </nav>
               </div>
             </div>

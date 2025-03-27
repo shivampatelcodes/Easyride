@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import SignUp from "./pages/Register";
 import SignIn from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import PassengerDashboard from "./pages/Dashboard";
 import SearchResults from "./pages/SearchResults";
 import DriverDashboard from "./pages/DriverDashboard";
 import ManageBookingsPage from "./pages/ManageBookingsPage";
@@ -16,13 +16,7 @@ import Settings from "./pages/Settings";
 import ProfileCompleteRoute from "./components/ProfileCompleteRoute";
 import Profile from "./pages/Profile";
 import PassengerBookingsPage from "./pages/PassengerBookingsPage";
-// import { AuthContext } from "./main.jsx";
-
-// const DefaultRoute = () => {
-//   const user = useContext(AuthContext);
-// If user exists, redirect to dashboard; otherwise to sign in.
-//   return <Navigate to={user ? "/dashboard" : "/signin"} replace />;
-// };
+import RoleRoute from "./components/RoleRoute";
 
 const App = () => {
   return (
@@ -31,19 +25,26 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
 
+        {/* Passenger Dashboard: Only allowed for "passenger" */}
         <Route
           path="/dashboard"
           element={
             <ProfileCompleteRoute>
-              <Dashboard />
+              <RoleRoute allowedRoles={["passenger"]}>
+                <PassengerDashboard />
+              </RoleRoute>
             </ProfileCompleteRoute>
           }
         />
+
+        {/* Driver Dashboard: Only allowed for "driver" */}
         <Route
           path="/driver-dashboard"
           element={
             <ProfileCompleteRoute>
-              <DriverDashboard />
+              <RoleRoute allowedRoles={["driver"]}>
+                <DriverDashboard />
+              </RoleRoute>
             </ProfileCompleteRoute>
           }
         />

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
@@ -147,7 +148,7 @@ const Settings = () => {
             <h2 className="text-2xl font-bold mb-4">General Settings</h2>
             <p>Select an option from the list.</p>
             {/* Dark Mode Toggle */}
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <h3 className="text-xl font-bold mb-2">Theme</h3>
               <button
                 onClick={toggleTheme}
@@ -155,7 +156,7 @@ const Settings = () => {
               >
                 Switch to {theme === "light" ? "Dark" : "Light"} Mode
               </button>
-            </div>
+            </div> */}
           </div>
         );
     }

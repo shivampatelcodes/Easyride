@@ -9,20 +9,23 @@ export const ThemeContext = createContext({
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState("light");
 
-  // On mount, get the stored theme
+  // On mount, load stored theme (or default to "light")
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") || "light";
     setTheme(storedTheme);
   }, []);
 
-  // Apply the dark class whenever theme changes.
+  // Apply the dark class based on theme state
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
-    console.log("Toggling theme. New theme:", newTheme);
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
   };
