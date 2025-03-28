@@ -17,6 +17,8 @@ import ProfileCompleteRoute from "./components/ProfileCompleteRoute";
 import Profile from "./pages/Profile";
 import PassengerBookingsPage from "./pages/PassengerBookingsPage";
 import RoleRoute from "./components/RoleRoute";
+import VerifyEmail from "./pages/VerifyEmail";
+import VerifiedRoute from "./components/VerifiedRoute"; // New import
 
 const App = () => {
   return (
@@ -24,36 +26,80 @@ const App = () => {
       <Routes>
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* Passenger Dashboard: Only allowed for "passenger" */}
+        {/* All protected routes must pass through VerifiedRoute */}
         <Route
           path="/dashboard"
           element={
-            <ProfileCompleteRoute>
-              <RoleRoute allowedRoles={["passenger"]}>
-                <PassengerDashboard />
-              </RoleRoute>
-            </ProfileCompleteRoute>
+            <VerifiedRoute>
+              <ProfileCompleteRoute>
+                <RoleRoute allowedRoles={["passenger"]}>
+                  <PassengerDashboard />
+                </RoleRoute>
+              </ProfileCompleteRoute>
+            </VerifiedRoute>
           }
         />
 
-        {/* Driver Dashboard: Only allowed for "driver" */}
         <Route
           path="/driver-dashboard"
           element={
-            <ProfileCompleteRoute>
-              <RoleRoute allowedRoles={["driver"]}>
-                <DriverDashboard />
-              </RoleRoute>
-            </ProfileCompleteRoute>
+            <VerifiedRoute>
+              <ProfileCompleteRoute>
+                <RoleRoute allowedRoles={["driver"]}>
+                  <DriverDashboard />
+                </RoleRoute>
+              </ProfileCompleteRoute>
+            </VerifiedRoute>
           }
         />
-        <Route path="/search-results" element={<SearchResults />} />
-        <Route path="/manage-bookings" element={<ManageBookingsPage />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/passenger-bookings" element={<PassengerBookingsPage />} />
-        {/* Redirect the default route to /dashboard so that ProfileCompleteRoute applies */}
+
+        <Route
+          path="/manage-bookings"
+          element={
+            <VerifiedRoute>
+              <ManageBookingsPage />
+            </VerifiedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <VerifiedRoute>
+              <Profile />
+            </VerifiedRoute>
+          }
+        />
+
+        <Route
+          path="/passenger-bookings"
+          element={
+            <VerifiedRoute>
+              <PassengerBookingsPage />
+            </VerifiedRoute>
+          }
+        />
+
+        <Route
+          path="/search-results"
+          element={
+            <VerifiedRoute>
+              <SearchResults />
+            </VerifiedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <VerifiedRoute>
+              <Settings />
+            </VerifiedRoute>
+          }
+        />
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>

@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
 import { app } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
@@ -31,14 +35,21 @@ export default function SignUp() {
     e.preventDefault();
     setError("");
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
+
+      // Send email verification
+      await sendEmailVerification(user);
+
+      // Create a user document in Firestore.
       await setDoc(doc(db, "users", user.uid), { email, role });
-      if (role === "driver") {
-        navigate("/driver-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+
+      // Instead of navigating to dashboard, redirect to VerifyEmail page.
+      navigate("/verify-email");
     } catch (err) {
       setError(getErrorMessage(err.code));
     }
@@ -51,7 +62,10 @@ export default function SignUp() {
         {error && <p className="text-sm text-red-500">{error}</p>}
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
@@ -64,7 +78,10 @@ export default function SignUp() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -79,14 +96,18 @@ export default function SignUp() {
           <div className="flex justify-center mb-4">
             <button
               type="button"
-              className={`px-4 py-2 font-medium ${role === "driver" ? "bg-[#2A5C82] text-white" : "bg-gray-200"}`}
+              className={`px-4 py-2 font-medium ${
+                role === "driver" ? "bg-[#2A5C82] text-white" : "bg-gray-200"
+              }`}
               onClick={() => setRole("driver")}
             >
               Driver
             </button>
             <button
               type="button"
-              className={`px-4 py-2 font-medium ${role === "passenger" ? "bg-[#2A5C82] text-white" : "bg-gray-200"}`}
+              className={`px-4 py-2 font-medium ${
+                role === "passenger" ? "bg-[#2A5C82] text-white" : "bg-gray-200"
+              }`}
               onClick={() => setRole("passenger")}
             >
               Passenger
