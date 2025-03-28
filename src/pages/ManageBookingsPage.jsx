@@ -16,6 +16,7 @@ import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
 import ConfirmationModal from "../components/ConfirmationModal";
 import Modal from "../components/Modal";
+import { sendRideAcceptedEmail } from "../utils/notifications"; // Import EmailJS helper
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -69,10 +70,35 @@ const ManageBookingsPage = () => {
 
   const handleAcceptBooking = async (bookingId) => {
     try {
+      // First, find the booking from local state.
+      const booking = bookings.find((b) => b.id === bookingId);
+      if (!booking) {
+        console.error("Booking not found for ID:", bookingId);
+        return;
+      }
+      console.log("Using booking from local state:", booking);
+
+      // Verify that passengerEmail is provided in local state.
+      if (!booking.passengerEmail || booking.passengerEmail.trim() === "") {
+        console.error("Passenger email is missing in booking data:", booking);
+        return;
+      }
+
+      // Update the status to "Accepted" in Firestore.
       const bookingRef = doc(db, "bookings", bookingId);
       await updateDoc(bookingRef, { status: "Accepted" });
       setModalMessage("Booking accepted!");
       setFeedbackModalOpen(true);
+
+      // Prepare ride accepted data using local booking data.
+      const rideAcceptData = {
+        passengerEmail: booking.passengerEmail,
+        rideId: booking.rideId,
+      };
+
+      console.log("Sending ride accepted email with data:", rideAcceptData);
+      // Send email notification via EmailJS.
+      sendRideAcceptedEmail(rideAcceptData);
     } catch (error) {
       console.error("Error accepting booking:", error);
     }
@@ -115,7 +141,7 @@ const ManageBookingsPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen text-xl">
-        Loading...
+        Loading.....
       </div>
     );
   }

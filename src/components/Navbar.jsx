@@ -2,7 +2,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
 
@@ -12,13 +18,9 @@ const db = getFirestore(app);
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  // Each notification now has a "link" property for its target page.
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: "Your ride has been accepted!", link: "/manage-bookings" },
-    { id: 2, text: "New trip posted near you.", link: "/driver-dashboard" },
-  ]);
-  // Track if there are new notifications to show the dot
-  const [hasNew, setHasNew] = useState(notifications.length > 0);
+  // Subscribe to notifications from Firestore instead of hardcoding them.
+  const [notifications, setNotifications] = useState([]);
+  const [hasNew, setHasNew] = useState(false);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
@@ -27,25 +29,42 @@ const Navbar = ({ role, setRole }) => {
   };
 
   const handleToggleNotifications = () => {
-    // When opening the dropdown, mark the notifications as "seen"
     if (!isNotifOpen) {
       setHasNew(false);
     }
     setIsNotifOpen((prev) => !prev);
   };
 
-  // When a notification is clicked, navigate and close the dropdown.
   const handleNotificationClick = (notif) => {
     setIsNotifOpen(false);
     navigate(notif.link);
   };
 
-  // Close notifications dropdown when clicking outside.
+  // Listen for real notifications for the current user
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      const q = query(
+        collection(db, "notifications"),
+        where("recipient", "==", user.uid)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const notifs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setNotifications(notifs);
+        setHasNew(notifs.length > 0);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setIsNotifOpen(false);
-        setHasNew(false); // Mark notifications as seen when closed.
+        setHasNew(false);
       }
     };
     if (isNotifOpen) {
@@ -55,13 +74,6 @@ const Navbar = ({ role, setRole }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isNotifOpen]);
-
-  // If new notifications are added later, update hasNew.
-  useEffect(() => {
-    if (notifications.length > 0) {
-      setHasNew(true);
-    }
-  }, [notifications]);
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow">

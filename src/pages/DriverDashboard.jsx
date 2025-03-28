@@ -9,9 +9,6 @@ import {
   collection,
   addDoc,
   Timestamp,
-  query,
-  where,
-  getDocs,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
@@ -24,7 +21,6 @@ const DriverDashboard = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
-  // Updated state: removed driverName and driverMobile; added price field.
   const [tripDetails, setTripDetails] = useState({
     origin: "",
     destination: "",
@@ -36,7 +32,7 @@ const DriverDashboard = () => {
   const [modalMessage, setModalMessage] = useState("");
   const navigate = useNavigate();
 
-  // Fetch the current user data, including email and role.
+  // Fetch the current user data.
   useEffect(() => {
     const fetchData = async () => {
       const user = auth.currentUser;
@@ -48,14 +44,13 @@ const DriverDashboard = () => {
           setRole(userData.role);
           console.log("User role from Firestore:", userData.role);
         }
-        // (Optional) Driver bookings retrieval code can remain here if needed.
       }
       setLoading(false);
     };
     fetchData();
   }, []);
 
-  // Function to post a trip. It creates a ride document and then (optionally) a booking.
+  // Function to post a trip.
   const handlePostTrip = async () => {
     const { origin, destination, date, seats, price } = tripDetails;
     if (!origin || !destination || !date || !seats || !price) {
@@ -63,29 +58,20 @@ const DriverDashboard = () => {
       setIsModalOpen(true);
       return;
     }
-
     try {
-      const rideDocRef = await addDoc(collection(db, "rides"), {
+      await addDoc(collection(db, "rides"), {
         ...tripDetails,
         date: Timestamp.fromDate(new Date(date)),
         driverId: auth.currentUser.uid,
         driverEmail: auth.currentUser.email,
         status: "available",
       });
-      // Optionally, create a booking document.
       await addDoc(collection(db, "bookings"), {
         date: Timestamp.fromDate(new Date(date)),
-        // Additional booking fields can be added.
       });
       setModalMessage("Trip posted successfully!");
       setIsModalOpen(true);
-
-      // Notify all passengers about the new ride.
-      notifyPassengers({
-        origin,
-        destination,
-        rideId: rideDocRef.id,
-      });
+      // In your actual flow, trigger real notification functions here as needed.
     } catch (error) {
       console.error("Error posting trip: ", error);
       setModalMessage("Error posting trip. Please try again.");
@@ -93,28 +79,42 @@ const DriverDashboard = () => {
     }
   };
 
-  // Function to notify all passengers by creating a notification for each.
-  // Each notification includes a title with a serial number.
-  const notifyPassengers = async (rideData) => {
+  // Function to notify the driver when a passenger requests a ride.
+  // Trigger this from your passenger ride request flow.
+  const notifyRiderOnRideRequest = async (rideRequestData) => {
     try {
-      const passengersQuery = query(
-        collection(db, "users"),
-        where("role", "==", "passenger")
-      );
-      const querySnapshot = await getDocs(passengersQuery);
-      querySnapshot.forEach(async (userDoc, index) => {
-        await addDoc(collection(db, "notifications"), {
-          recipient: userDoc.id,
-          title: `Notification #${index + 1}`,
-          text: `New ride from ${rideData.origin} to ${rideData.destination} has been posted!`,
-          link: "/search-results",
-          timestamp: Timestamp.now(),
-        });
+      await addDoc(collection(db, "notifications"), {
+        recipient: rideRequestData.riderId, // driver id
+        title: "New Ride Request",
+        text: `A passenger has requested your ride from ${rideRequestData.origin} to ${rideRequestData.destination}.`,
+        link: `/ride-requests/${rideRequestData.rideId}`, // adjust route as needed
+        timestamp: Timestamp.now(),
       });
     } catch (error) {
-      console.error("Error notifying passengers:", error);
+      console.error("Error notifying rider:", error);
     }
   };
+
+  // Function to notify the passenger when the driver accepts the ride request.
+  // Trigger this from your ride acceptance flow.
+  const notifyPassengerOnRideAccept = async (rideAcceptData) => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        recipient: rideAcceptData.passengerId,
+        title: "Ride Request Accepted",
+        text: `Your request for ride ${rideAcceptData.rideId} was accepted by the driver!`,
+        link: `/ride-details/${rideAcceptData.rideId}`, // adjust route as needed
+        timestamp: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error("Error notifying passenger:", error);
+    }
+  };
+
+  // Simulation functions and buttons have been removed.
+  // Integrate notifyRiderOnRideRequest and notifyPassengerOnRideAccept
+  // into your real ride request and acceptance flows in the PassengerDashboard
+  // or ManageBookingsPage as needed.
 
   if (loading) {
     return (
@@ -124,7 +124,6 @@ const DriverDashboard = () => {
     );
   }
 
-  // Display a welcome message using the part of the email before the "@"
   const userName = email.split("@")[0];
 
   return (
@@ -139,7 +138,6 @@ const DriverDashboard = () => {
             <p className="mt-4 text-gray-600 dark:text-gray-300">
               You are logged in as a <span className="font-bold">{role}</span>.
             </p>
-
             {/* Post Trips Section */}
             <div className="mt-8">
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
