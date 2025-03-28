@@ -1,10 +1,23 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAuth, signOut } from "firebase/auth";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  getAuth,
+  signOut,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import Navbar from "../components/Navbar";
 import { ThemeContext } from "../context/ThemeContext";
+import DeleteAccountModal from "../components/DeleteAccountModal"; // New import
 
 const auth = getAuth();
 const db = getFirestore();
@@ -15,12 +28,14 @@ const Settings = () => {
     fullName: "",
     phone: "",
     address: "",
+    email: "",
   });
   const [role, setRole] = useState("");
   const [activeTab, setActiveTab] = useState("general");
   const [showMobileOptions, setShowMobileOptions] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useContext(ThemeContext);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -31,6 +46,7 @@ const Settings = () => {
           const data = userDoc.data();
           setDetails({
             fullName: data.fullName || "",
+            email: data.email || "",
             phone: data.phone || "",
             address: data.address || "",
           });
@@ -71,6 +87,33 @@ const Settings = () => {
     }
   };
 
+  // Handler to delete the account after confirmation.
+  const handleDeleteAccount = async ({
+    email: inputEmail,
+    password: inputPassword,
+  }) => {
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        // Reauthenticate the user with provided credentials.
+        const credential = EmailAuthProvider.credential(
+          user.email,
+          inputPassword
+        );
+        await reauthenticateWithCredential(user, credential);
+        // Delete the user's Firestore document.
+        await deleteDoc(doc(db, "users", user.uid));
+        // Delete the user from Firebase Auth.
+        await deleteUser(user);
+        setIsDeleteModalOpen(false);
+        navigate("/signup");
+      } catch (error) {
+        console.error("Error deleting account:", error);
+        alert("Error deleting account. Please try again or contact support.");
+      }
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
 
   const renderContent = () => {
@@ -81,41 +124,53 @@ const Settings = () => {
             <h2 className="text-2xl font-bold mb-4">Profile</h2>
             <form onSubmit={handleProfileSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-900"
+                >
                   Full Name
                 </label>
                 <input
                   type="text"
+                  id="fullName"
                   name="fullName"
                   value={details.fullName}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 text-gray-900"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Phone Number
                 </label>
                 <input
                   type="tel"
+                  id="phone"
                   name="phone"
                   value={details.phone}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Address
                 </label>
                 <input
                   type="text"
+                  id="address"
                   name="address"
                   value={details.address}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500"
                   required
                 />
               </div>
@@ -147,16 +202,6 @@ const Settings = () => {
           <div>
             <h2 className="text-2xl font-bold mb-4">General Settings</h2>
             <p>Select an option from the list.</p>
-            {/* Dark Mode Toggle */}
-            {/* <div className="mt-6">
-              <h3 className="text-xl font-bold mb-2">Theme</h3>
-              <button
-                onClick={toggleTheme}
-                className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2"
-              >
-                Switch to {theme === "light" ? "Dark" : "Light"} Mode
-              </button>
-            </div> */}
           </div>
         );
     }
@@ -208,6 +253,17 @@ const Settings = () => {
             className="w-full text-left px-4 py-2 text-blue-500 hover:underline focus:outline-none"
           >
             Privacy
+          </button>
+        </li>
+        <li>
+          <button
+            onClick={() => {
+              setIsDeleteModalOpen(true);
+              setShowMobileOptions(false);
+            }}
+            className="w-full text-left px-4 py-2 text-red-500 hover:underline focus:outline-none"
+          >
+            Delete Account
           </button>
         </li>
       </ul>
@@ -267,6 +323,14 @@ const Settings = () => {
                     Privacy
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="w-full text-left text-red-500 hover:underline focus:outline-none"
+                  >
+                    Delete Account
+                  </button>
+                </li>
               </ul>
               <div className="mt-6">
                 <button
@@ -289,6 +353,12 @@ const Settings = () => {
         </div>
       </div>
       {showMobileOptions && mobileOptionsOverlay}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        userEmail={details.email}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        onDelete={handleDeleteAccount}
+      />
     </div>
   );
 };
