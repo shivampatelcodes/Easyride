@@ -15,6 +15,7 @@ import {
 import { app } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import SearchableDropdown from "../components/SearchableDropdown";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  const [cities, setCities] = useState([]);
   const [searchParams, setSearchParams] = useState({
     origin: "",
     destination: "",
@@ -37,6 +39,7 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const navigate = useNavigate();
 
+  // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
       const user = auth.currentUser;
@@ -52,6 +55,31 @@ const Dashboard = () => {
     };
 
     fetchUserData();
+  }, []);
+
+  // Dynamically fetch list of Canadian cities from external API
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/cities",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: "Canada" }),
+          }
+        );
+        const data = await response.json();
+        if (data && data.data) {
+          // Sort alphabetically
+          setCities(data.data.sort());
+        }
+      } catch (error) {
+        console.error("Error fetching Canadian cities:", error);
+      }
+    };
+
+    fetchCities();
   }, []);
 
   const handleSearch = () => {
@@ -135,26 +163,26 @@ const Dashboard = () => {
                 Search & Book Rides
               </h3>
               <div className="mt-4 space-y-4">
-                <input
-                  type="text"
-                  placeholder="Origin"
+                <SearchableDropdown
+                  label="Origin"
+                  options={cities}
                   value={searchParams.origin}
-                  onChange={(e) =>
-                    setSearchParams({ ...searchParams, origin: e.target.value })
+                  onChange={(selected) =>
+                    setSearchParams({ ...searchParams, origin: selected })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Select origin"
                 />
-                <input
-                  type="text"
-                  placeholder="Destination"
+                <SearchableDropdown
+                  label="Destination"
+                  options={cities}
                   value={searchParams.destination}
-                  onChange={(e) =>
+                  onChange={(selected) =>
                     setSearchParams({
                       ...searchParams,
-                      destination: e.target.value,
+                      destination: selected,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Select destination"
                 />
                 <input
                   type="date"

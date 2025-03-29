@@ -8,11 +8,16 @@ import {
   getDoc,
   collection,
   addDoc,
+  query,
+  where,
+  getDocs,
+  updateDoc,
   Timestamp,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
 import Modal from "../components/Modal";
+import SearchableDropdown from "../components/SearchableDropdown"; // Import SearchableDropdown
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -21,6 +26,7 @@ const DriverDashboard = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  const [cities, setCities] = useState([]);
   const [tripDetails, setTripDetails] = useState({
     origin: "",
     destination: "",
@@ -50,6 +56,31 @@ const DriverDashboard = () => {
     fetchData();
   }, []);
 
+  // Dynamically fetch list of Canadian cities from external API
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/cities",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: "Canada" }),
+          }
+        );
+        const data = await response.json();
+        if (data && data.data) {
+          // Sort the list alphabetically
+          setCities(data.data.sort());
+        }
+      } catch (error) {
+        console.error("Error fetching Canadian cities:", error);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
   // Function to post a trip.
   const handlePostTrip = async () => {
     const { origin, destination, date, seats, price } = tripDetails;
@@ -66,12 +97,8 @@ const DriverDashboard = () => {
         driverEmail: auth.currentUser.email,
         status: "available",
       });
-      await addDoc(collection(db, "bookings"), {
-        date: Timestamp.fromDate(new Date(date)),
-      });
       setModalMessage("Trip posted successfully!");
       setIsModalOpen(true);
-      // In your actual flow, trigger real notification functions here as needed.
     } catch (error) {
       console.error("Error posting trip: ", error);
       setModalMessage("Error posting trip. Please try again.");
@@ -144,28 +171,26 @@ const DriverDashboard = () => {
                 Post Trips
               </h3>
               <div className="mt-4 space-y-4">
-                <input
-                  type="text"
-                  placeholder="Origin"
+                <SearchableDropdown
+                  label="Origin"
+                  options={cities}
                   value={tripDetails.origin}
-                  onChange={(e) =>
-                    setTripDetails({ ...tripDetails, origin: e.target.value })
+                  onChange={(selected) =>
+                    setTripDetails({ ...tripDetails, origin: selected })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  required
+                  placeholder="Select origin"
                 />
-                <input
-                  type="text"
-                  placeholder="Destination"
+                <SearchableDropdown
+                  label="Destination"
+                  options={cities}
                   value={tripDetails.destination}
-                  onChange={(e) =>
+                  onChange={(selected) =>
                     setTripDetails({
                       ...tripDetails,
-                      destination: e.target.value,
+                      destination: selected,
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  required
+                  placeholder="Select destination"
                 />
                 <input
                   type="date"
