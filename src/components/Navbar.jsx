@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -18,11 +18,11 @@ const db = getFirestore(app);
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  // Subscribe to notifications from Firestore instead of hardcoding them.
   const [notifications, setNotifications] = useState([]);
   const [hasNew, setHasNew] = useState(false);
   const notifRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -75,63 +75,21 @@ const Navbar = ({ role, setRole }) => {
     };
   }, [isNotifOpen]);
 
+  // Helper function to check if a path is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow">
-      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 flex justify-between items-center">
-        {/* Left side: Logo and Navigation Links */}
-        <div className="flex items-center">
-          <button
-            className="text-gray-500 focus:outline-none lg:hidden"
-            onClick={toggleDrawer}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16m-7 6h7"
-              ></path>
-            </svg>
-          </button>
-          <span className="text-3xl font-bold text-gray-900 ml-4 lg:ml-0 cursor-pointer">
-            <Link to="/dashboard">EasyRide</Link>
-          </span>
-          <nav className="hidden lg:flex items-center ml-8">
-            <Link
-              to="/dashboard"
-              className="mr-4 text-blue-500 hover:underline"
-            >
-              Home
-            </Link>
-            {role === "driver" ? (
-              <Link
-                to="/manage-bookings"
-                className="mr-4 text-blue-500 hover:underline"
-              >
-                Manage Bookings
-              </Link>
-            ) : (
-              <Link
-                to="/passenger-bookings"
-                className="mr-4 text-blue-500 hover:underline"
-              >
-                Bookings
-              </Link>
-            )}
-          </nav>
-        </div>
-        {/* Right side: Notifications and Settings */}
-        <div className=" lg:flex items-center space-x-4">
-          <div className="relative" ref={notifRef}>
+    <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side: Logo and Navigation Links */}
+          <div className="flex items-center">
             <button
-              onClick={handleToggleNotifications}
-              className="relative p-2 text-gray-500 focus:outline-none"
+              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none lg:hidden"
+              onClick={toggleDrawer}
+              aria-label="Open menu"
             >
               <svg
                 className="w-6 h-6"
@@ -144,115 +102,321 @@ const Navbar = ({ role, setRole }) => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  d="M4 6h16M4 12h16m-7 6h7"
                 ></path>
               </svg>
-              {hasNew && (
-                <span className="absolute top-0 right-0 inline-block h-2 w-2 rounded-full bg-red-600"></span>
-              )}
             </button>
-            {isNotifOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md z-20">
-                <div className="p-4">
-                  {notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => handleNotificationClick(notif)}
-                        className="cursor-pointer text-gray-800 dark:text-gray-100 text-sm py-1 border-b last:border-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        {notif.text}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">
-                      No notifications
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+
+            {/* Logo */}
+            <div className="flex items-center">
+              <Link to="/dashboard" className="flex items-center ml-2 lg:ml-0">
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                  EasyRide
+                </span>
+              </Link>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center ml-10 space-x-8">
+              <Link
+                to="/dashboard"
+                className={`flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                  isActive("/dashboard")
+                    ? "border-blue-500 text-gray-900 dark:text-white"
+                    : "border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                Home
+              </Link>
+
+              {role === "driver" ? (
+                <Link
+                  to="/manage-bookings"
+                  className={`flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                    isActive("/manage-bookings")
+                      ? "border-blue-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Manage Bookings
+                </Link>
+              ) : (
+                <Link
+                  to="/passenger-bookings"
+                  className={`flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                    isActive("/passenger-bookings")
+                      ? "border-blue-500 text-gray-900 dark:text-white"
+                      : "border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  My Bookings
+                </Link>
+              )}
+            </nav>
           </div>
-          {/* Settings Icon */}
-          <Link
-            to="/settings"
-            className="flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 text-gray-500 hover:text-blue-500"
-          >
-            <svg
-              className="w-8 h-8"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+
+          {/* Right side: Notifications and Settings */}
+          <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={handleToggleNotifications}
+                className="relative p-2 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Notifications"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  ></path>
+                </svg>
+                {hasNew && (
+                  <span className="absolute top-1 right-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 border border-gray-200 dark:border-gray-700">
+                  <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium">
+                    Notifications
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className="p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-150"
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0 bg-blue-100 dark:bg-blue-900 rounded-full p-2">
+                              <svg
+                                className="h-5 w-5 text-blue-600 dark:text-blue-300"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {notif.text}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {notif.time}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        No notifications
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Settings Button */}
+            <Link
+              to="/settings"
+              className={`p-2 rounded-full ${
+                isActive("/settings")
+                  ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              aria-label="Settings"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M16 14a4 4 0 10-8 0m8 0v1a4 4 0 01-8 0v-1m8 0a4 4 0 11-8 0"
-              />
-            </svg>
-          </Link>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                ></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                ></path>
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
+
       {/* Mobile Drawer Menu */}
       {isDrawerOpen && (
-        <div className="lg:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity"
+            onClick={toggleDrawer}
+            aria-hidden="true"
+          ></div>
+
           <div className="fixed inset-y-0 left-0 flex max-w-full">
-            <div className="w-64 bg-white shadow-xl">
-              <div className="px-4 py-6">
-                <button
-                  className="text-gray-500 focus:outline-none"
-                  onClick={toggleDrawer}
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    ></path>
-                  </svg>
-                </button>
-                <nav className="mt-6">
-                  <Link
-                    to="/dashboard"
-                    className="block px-4 py-2 text-blue-500 hover:underline"
+            <div className="relative w-screen max-w-xs bg-white dark:bg-gray-800 shadow-xl">
+              <div className="h-full flex flex-col py-5 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto">
+                {/* Close button */}
+                <div className="px-4 flex items-center justify-between">
+                  <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                    EasyRide
+                  </div>
+                  <button
+                    className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
                     onClick={toggleDrawer}
                   >
+                    <svg
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Nav items */}
+                <div className="mt-6 px-2 space-y-1">
+                  <Link
+                    to="/dashboard"
+                    className={`group flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                      isActive("/dashboard")
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                    onClick={toggleDrawer}
+                  >
+                    <svg
+                      className="mr-3 h-5 w-5 text-blue-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
                     Home
                   </Link>
+
                   {role === "driver" ? (
                     <Link
                       to="/manage-bookings"
-                      className="block px-4 py-2 text-blue-500 hover:underline"
+                      className={`group flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                        isActive("/manage-bookings")
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
                       onClick={toggleDrawer}
                     >
+                      <svg
+                        className="mr-3 h-5 w-5 text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
                       Manage Bookings
                     </Link>
                   ) : (
                     <Link
                       to="/passenger-bookings"
-                      className="block px-4 py-2 text-blue-500 hover:underline"
+                      className={`group flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                        isActive("/passenger-bookings")
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
                       onClick={toggleDrawer}
                     >
-                      Bookings
+                      <svg
+                        className="mr-3 h-5 w-5 text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                        />
+                      </svg>
+                      My Bookings
                     </Link>
                   )}
-                  <button
-                    className="block w-full text-left px-4 py-2 text-gray-500 hover:underline"
+
+                  <Link
+                    to="/settings"
+                    className={`group flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                      isActive("/settings")
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
                     onClick={toggleDrawer}
                   >
+                    <svg
+                      className="mr-3 h-5 w-5 text-blue-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
                     Settings
-                  </button>
-                </nav>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

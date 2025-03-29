@@ -19,14 +19,11 @@ const ProfileCompleteRoute = ({ children }) => {
       const unsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          console.log("User Data:", data);
-          // For drivers, assume profile is complete; for passengers, optionally check required fields.
-          if (data.role && data.role.toLowerCase() === "driver") {
-            setProfileComplete(true);
-          } else if (data.role && data.role.toLowerCase() === "passenger") {
+          // Require fullName, phone, and address for all roles
+          if (data.fullName && data.phone && data.address) {
             setProfileComplete(true);
           } else {
-            setProfileComplete(!!(data.fullName && data.phone && data.address));
+            setProfileComplete(false);
           }
         } else {
           setProfileComplete(false);
@@ -41,9 +38,18 @@ const ProfileCompleteRoute = ({ children }) => {
 
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/signin" replace />;
+
+  // Force incomplete profiles to "/settings"
   if (!profileComplete && location.pathname !== "/settings") {
-    return <Navigate to="/settings" replace />;
+    return (
+      <Navigate
+        to="/settings"
+        replace
+        state={{ message: "Please complete your profile before continuing." }}
+      />
+    );
   }
+
   return children;
 };
 

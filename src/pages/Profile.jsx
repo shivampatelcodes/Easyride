@@ -1,25 +1,32 @@
-import { useState, useEffect } from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState, useEffect } from "react";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
-import Navbar from "../components/Navbar";
 import { app } from "../firebaseConfig";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Modal from "../components/Modal";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 const Profile = () => {
-  const [loading, setLoading] = useState(true);
   const [details, setDetails] = useState({
     fullName: "",
     email: "",
     phone: "",
     address: "",
+    role: "",
   });
-  const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [role, setRole] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
+    const fetchUserProfile = async () => {
       const user = auth.currentUser;
       if (user) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -30,6 +37,7 @@ const Profile = () => {
             email: data.email || "",
             phone: data.phone || "",
             address: data.address || "",
+            role: data.role || "",
           });
           setRole(data.role || "");
         }
@@ -37,7 +45,7 @@ const Profile = () => {
       setLoading(false);
     };
 
-    fetchUserDetails();
+    fetchUserProfile();
   }, []);
 
   const handleChange = (e) => {
@@ -70,7 +78,7 @@ const Profile = () => {
         {document.documentElement.classList.contains("dark")
           ? "Dark is active"
           : "Light is active"}
-      </div>  
+      </div>
       <Navbar role={role} setRole={setRole} />
       <main className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="px-4 py-6 bg-white shadow sm:rounded-lg sm:px-10">
