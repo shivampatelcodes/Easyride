@@ -244,7 +244,7 @@ const SearchResults = () => {
                 </span>
               </div>
               <button
-                onClick={() => navigate("/search")}
+                onClick={() => navigate("/dashboard")}
                 className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
               >
                 <svg
