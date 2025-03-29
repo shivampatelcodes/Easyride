@@ -31,6 +31,7 @@ const Dashboard = () => {
     date: "",
   });
   const [bookings, setBookings] = useState([]);
+  const [firstName, setFirstName] = useState("");
   const navigate = useNavigate();
 
   // Fetch user data
@@ -43,6 +44,7 @@ const Dashboard = () => {
           const userData = userDoc.data();
           setEmail(userData.email);
           setRole(userData.role);
+          setFirstName(userData.firstName || userData.email.split("@")[0]);
         }
       }
       setLoading(false);
@@ -87,8 +89,6 @@ const Dashboard = () => {
     );
   }
 
-  const userName = email.split("@")[0];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 dark:text-gray-100">
       <Navbar role={role} setRole={setRole} />
@@ -103,7 +103,7 @@ const Dashboard = () => {
           />
         </div>
         <div className="container mx-auto px-6 py-12 relative z-10">
-          <h1 className="text-4xl font-bold mb-2">Hello, {userName}!</h1>
+          <h1 className="text-4xl font-bold mb-2">Hello, {firstName}!</h1>
           <p className="text-xl opacity-90">
             Find your next ride and travel with confidence.
           </p>
