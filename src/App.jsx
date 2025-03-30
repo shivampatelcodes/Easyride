@@ -104,7 +104,9 @@ const App = () => {
           path="/admin-dashboard"
           element={
             <VerifiedRoute>
-              <AdminDashboard />
+              <RoleRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </RoleRoute>
             </VerifiedRoute>
           }
         />
