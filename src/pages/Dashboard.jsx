@@ -97,7 +97,7 @@ const Dashboard = () => {
       <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-700 text-white">
         <div className="absolute inset-0 opacity-20">
           <img
-            src="https://images.unsplash.com/photo-1541697183324-e05049235651?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"
+            src="https://images.pexels.com/photos/1252500/pexels-photo-1252500.jpeg?auto=compress&cs=tinysrgb&w=1950"
             className="w-full h-full object-cover"
             alt="Passenger journey background"
           />
