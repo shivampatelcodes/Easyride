@@ -33,12 +33,10 @@ const App = () => {
         <Route
           path="/dashboard"
           element={
-            <VerifiedRoute>
-              <ProfileCompleteRoute>
-                <RoleRoute allowedRoles={["passenger"]}>
-                  <PassengerDashboard />
-                </RoleRoute>
-              </ProfileCompleteRoute>
+            <VerifiedRoute skipVerificationCheck={true}>
+              <RoleRoute allowedRoles={["passenger"]}>
+                <PassengerDashboard />
+              </RoleRoute>
             </VerifiedRoute>
           }
         />

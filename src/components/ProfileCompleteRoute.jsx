@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { getAuth } from "firebase/auth";
@@ -12,6 +13,7 @@ const ProfileCompleteRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [profileComplete, setProfileComplete] = useState(false);
   const location = useLocation();
+  const [userRole, setUserRole] = useState(null);
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -19,12 +21,12 @@ const ProfileCompleteRoute = ({ children }) => {
       const unsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          // Require fullName, phone, and address for all roles
           if (data.fullName && data.phone && data.address) {
             setProfileComplete(true);
           } else {
             setProfileComplete(false);
           }
+          // Set userRole from Firestore          }
         } else {
           setProfileComplete(false);
         }
@@ -41,6 +43,11 @@ const ProfileCompleteRoute = ({ children }) => {
 
   // Force incomplete profiles to "/settings"
   if (!profileComplete && location.pathname !== "/settings") {
+    // Optionally, allow passengers to proceed despite incomplete profiles:
+    if (userRole === "passenger") {
+      // You might log a warning here or prompt them later in the dashboard
+      return children;
+    }
     return (
       <Navigate
         to="/settings"

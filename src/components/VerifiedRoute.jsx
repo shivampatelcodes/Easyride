@@ -4,7 +4,7 @@ import { getAuth } from "firebase/auth";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
 
-const VerifiedRoute = ({ children }) => {
+const VerifiedRoute = ({ children, skipVerificationCheck = false }) => {
   // Use the app instance from your firebaseConfig
   const auth = getAuth(app);
   const [checking, setChecking] = useState(true);
@@ -35,12 +35,23 @@ const VerifiedRoute = ({ children }) => {
     return <Navigate to="/signin" replace />;
   }
 
+  // Skip verification check if requested
+  if (skipVerificationCheck) {
+    return children;
+  }
+
+  // Normal verification logic
+  if (!user.emailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   console.log("VerifiedRoute: User detected", user);
   return children;
 };
 
 VerifiedRoute.propTypes = {
   children: PropTypes.node.isRequired,
+  skipVerificationCheck: PropTypes.bool,
 };
 
 export default VerifiedRoute;
