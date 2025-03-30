@@ -1,42 +1,60 @@
 /* eslint-disable no-unused-vars */
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { app } from "../firebaseConfig";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 
-const auth = getAuth(app);
-const db = getFirestore(app);
-
 const PrivateRoute = ({ children }) => {
+  const auth = getAuth(app);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
+  const [user, setUser] = useState(null);
+
+  console.log("PrivateRoute: Component rendered");
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-        }
-      }
+    console.log("PrivateRoute: Starting auth listener");
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      console.log("PrivateRoute: onAuthStateChanged callback", currentUser);
+      setUser(currentUser);
       setLoading(false);
-    };
-
-    fetchUserRole();
-  }, []);
+    });
+    return unsubscribe;
+  }, [auth]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    console.log("PrivateRoute: Loading state");
+    return (
+      <div
+        style={{
+          padding: "2rem",
+          backgroundColor: "#f0f0f0",
+          textAlign: "center",
+        }}
+      >
+        Loading... (PrivateRoute)
+      </div>
+    );
   }
 
-  if (!auth.currentUser) {
-    return <Navigate to="/signin" replace />;
+  if (!user) {
+    console.log("PrivateRoute: No user detected, redirecting to /signin");
+    return (
+      <div
+        style={{
+          padding: "2rem",
+          backgroundColor: "#ffdddd",
+          textAlign: "center",
+        }}
+      >
+        Redirecting to signin...
+      </div>
+    );
+    // return <Navigate to="/signin" replace />;
   }
 
-  return children;
+  console.log("PrivateRoute: User detected", user);
+  return <>{children}</>;
 };
 
 PrivateRoute.propTypes = {

@@ -18,7 +18,8 @@ import Profile from "./pages/Profile";
 import PassengerBookingsPage from "./pages/PassengerBookingsPage";
 import RoleRoute from "./components/RoleRoute";
 import VerifyEmail from "./pages/VerifyEmail";
-import VerifiedRoute from "./components/VerifiedRoute"; // New import
+import VerifiedRoute from "./components/VerifiedRoute";
+import AdminDashboard from "./pages/AdminDashboard"; // Add this import
 
 const App = () => {
   return (
@@ -96,6 +97,16 @@ const App = () => {
           element={
             <VerifiedRoute>
               <Settings />
+            </VerifiedRoute>
+          }
+        />
+
+        {/* Admin Dashboard Route */}
+        <Route
+          path="/admin-dashboard"
+          element={
+            <VerifiedRoute>
+              <AdminDashboard />
             </VerifiedRoute>
           }
         />

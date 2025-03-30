@@ -30,11 +30,13 @@ const RoleRoute = ({ allowedRoles, children }) => {
 
   if (!allowedRoles.includes(role)) {
     // Redirect to dashboard appropriate to their role
-    return role === "driver" ? (
-      <Navigate to="/driver-dashboard" replace />
-    ) : (
-      <Navigate to="/dashboard" replace />
-    );
+    if (role === "driver") {
+      return <Navigate to="/driver-dashboard" replace />;
+    } else if (role === "passenger") {
+      return <Navigate to="/dashboard" replace />;
+    } else if (role === "admin") {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
   }
   return children;
 };
