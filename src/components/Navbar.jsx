@@ -8,6 +8,8 @@ import {
   query,
   where,
   onSnapshot,
+  updateDoc,
+  doc,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
@@ -20,6 +22,7 @@ const Navbar = ({ role, setRole }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasNew, setHasNew] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,26 +43,6 @@ const Navbar = ({ role, setRole }) => {
     navigate(notif.link);
   };
 
-  // Listen for real notifications for the current user
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      const q = query(
-        collection(db, "notifications"),
-        where("recipient", "==", user.uid)
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const notifs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setNotifications(notifs);
-        setHasNew(notifs.length > 0);
-      });
-      return () => unsubscribe();
-    }
-  }, []);
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -78,6 +61,53 @@ const Navbar = ({ role, setRole }) => {
   // Helper function to check if a path is active
   const isActive = (path) => {
     return location.pathname === path;
+  };
+
+  // Fetch notifications when component mounts
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    console.log("Fetching notifications for user:", user.uid);
+
+    // Create a query against the notifications collection
+    const q = query(
+      collection(db, "notifications"),
+      where("recipient", "==", user.uid)
+    );
+
+    // Listen for real-time updates
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const notifs = [];
+      querySnapshot.forEach((doc) => {
+        notifs.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      console.log("Notifications fetched:", notifs.length);
+
+      // Sort by time (newest first)
+      notifs.sort((a, b) => b.time.seconds - a.time.seconds);
+      setNotifications(notifs);
+
+      // Count unread notifications
+      setUnreadCount(notifs.filter((n) => n.status === "unread").length);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Mark notification as read
+  const markAsRead = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, "notifications", notificationId), {
+        status: "read",
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
   return (
@@ -178,8 +208,10 @@ const Navbar = ({ role, setRole }) => {
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   ></path>
                 </svg>
-                {hasNew && (
-                  <span className="absolute top-1 right-1 inline-block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full">
+                    {unreadCount}
+                  </span>
                 )}
               </button>
 
@@ -218,7 +250,11 @@ const Navbar = ({ role, setRole }) => {
                                 {notif.text}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {notif.time}
+                                {notif.time && notif.time.seconds
+                                  ? new Date(
+                                      notif.time.seconds * 1000
+                                    ).toLocaleString()
+                                  : "Just now"}
                               </p>
                             </div>
                           </div>

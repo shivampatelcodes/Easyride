@@ -1,51 +1,40 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { getAuth } from "firebase/auth";
-import { app } from "../firebaseConfig";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import PropTypes from "prop-types";
 
 const VerifiedRoute = ({ children, skipVerificationCheck = false }) => {
-  // Use the app instance from your firebaseConfig
-  const auth = getAuth(app);
-  const [checking, setChecking] = useState(true);
-  const [user, setUser] = useState(null);
-
-  console.log("VerifiedRoute: Component rendered");
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   useEffect(() => {
-    console.log("VerifiedRoute: Starting auth listener");
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      console.log("VerifiedRoute: onAuthStateChanged callback", currentUser);
-      setUser(currentUser);
-      setChecking(false);
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+      setIsEmailVerified(user?.emailVerified || false);
+      setLoading(false);
     });
-    return () => {
-      console.log("VerifiedRoute: Unsubscribing auth listener");
-      unsubscribe();
-    };
-  }, [auth]);
 
-  if (checking) {
-    console.log("VerifiedRoute: Still checking auth state");
-    return <div>Loading... (VerifiedRoute)</div>;
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
+      </div>
+    );
   }
 
-  if (!user) {
-    console.log("VerifiedRoute: No user detected, redirecting");
+  if (!isAuthenticated) {
     return <Navigate to="/signin" replace />;
   }
 
-  // Skip verification check if requested
-  if (skipVerificationCheck) {
-    return children;
-  }
-
-  // Normal verification logic
-  if (!user.emailVerified) {
+  if (!isEmailVerified && !skipVerificationCheck) {
     return <Navigate to="/verify-email" replace />;
   }
 
-  console.log("VerifiedRoute: User detected", user);
   return children;
 };
 

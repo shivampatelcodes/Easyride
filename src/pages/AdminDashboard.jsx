@@ -435,13 +435,6 @@ const AdminDashboard = () => {
 
   // Notification functions
   const handleSendNotification = async () => {
-    if (!notification.title || !notification.message) {
-      setModalMessage(
-        "Please provide both title and message for the notification."
-      );
-      setIsModalOpen(true);
-      return;
-    }
     try {
       let recipientIds = [];
       if (notification.recipients === "all") {
@@ -451,6 +444,9 @@ const AdminDashboard = () => {
           .filter((user) => user.role === notification.recipients)
           .map((user) => user.id);
       }
+      console.log("Sending notifications to:", recipientIds);
+
+      // ISSUE: The promises are created but never awaited
       const notificationPromises = recipientIds.map((userId) => {
         return addDoc(collection(db, "notifications"), {
           recipient: userId,
@@ -458,18 +454,13 @@ const AdminDashboard = () => {
           text: notification.message,
           time: Timestamp.now(),
           status: "unread",
-          link: "/dashboard", // Default link for admin
+          link: "/dashboard",
           type: "admin_notification",
         });
       });
+
+      // Missing Promise.all to await these promises!
       await Promise.all(notificationPromises);
-      setModalMessage(`Notification sent to ${recipientIds.length} users!`);
-      setIsModalOpen(true);
-      setNotification({
-        title: "",
-        message: "",
-        recipients: "all",
-      });
     } catch (error) {
       console.error("Error sending notifications:", error);
       setModalMessage("Error sending notifications. Please try again.");

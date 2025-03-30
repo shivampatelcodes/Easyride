@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-import { useContext } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -19,7 +18,7 @@ import PassengerBookingsPage from "./pages/PassengerBookingsPage";
 import RoleRoute from "./components/RoleRoute";
 import VerifyEmail from "./pages/VerifyEmail";
 import VerifiedRoute from "./components/VerifiedRoute";
-import AdminDashboard from "./pages/AdminDashboard"; // Add this import
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   return (
@@ -29,11 +28,11 @@ const App = () => {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* All protected routes must pass through VerifiedRoute */}
+        {/* All protected routes require both authentication and email verification */}
         <Route
           path="/dashboard"
           element={
-            <VerifiedRoute skipVerificationCheck={true}>
+            <VerifiedRoute>
               <RoleRoute allowedRoles={["passenger"]}>
                 <PassengerDashboard />
               </RoleRoute>
