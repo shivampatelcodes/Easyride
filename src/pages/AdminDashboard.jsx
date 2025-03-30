@@ -1,6 +1,14 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
+import {
+  getAuth,
+  deleteUser as deleteAuthUser,
+  updateProfile,
+  signInWithEmailAndPassword,
+  updateEmail,
+  updatePassword,
+  EmailAuthProvider,
+} from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -13,6 +21,7 @@ import {
   Timestamp,
   addDoc,
 } from "firebase/firestore";
+import { httpsCallable, getFunctions } from "firebase/functions";
 import { app } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -111,14 +120,38 @@ const AdminDashboard = () => {
 
   // Data fetching functions
   const fetchUsers = async () => {
-    const usersQuery = query(collection(db, "users"));
-    const usersSnapshot = await getDocs(usersQuery);
-    const usersData = usersSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setUsers(usersData);
-    return usersData;
+    try {
+      const usersQuery = query(collection(db, "users"));
+      const usersSnapshot = await getDocs(usersQuery);
+
+      // Map over the snapshot to create an array of user objects
+      const usersArray = usersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Use email (in lowercase) as the unique key
+      const uniqueUsersDict = {};
+      usersArray.forEach((user) => {
+        if (user.email) {
+          // Normalize the email to lowercase
+          const emailKey = user.email.toLowerCase();
+          uniqueUsersDict[emailKey] = user;
+        } else {
+          // Fall back to using document ID as key if email is missing
+          uniqueUsersDict[user.id] = user;
+        }
+      });
+
+      // Create the unique users array based on the dictionary values
+      const uniqueUsers = Object.values(uniqueUsersDict);
+      console.log("Unique users count: ", uniqueUsers.length);
+      setUsers(uniqueUsers);
+      return uniqueUsers;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
   };
 
   const fetchRides = async () => {
@@ -253,13 +286,29 @@ const AdminDashboard = () => {
     setSelectedUser(userId);
     setConfirmAction(() => async () => {
       try {
+        // 1. Update Firestore record
         await updateDoc(doc(db, "users", userId), { blocked: true });
+
+        // 2. Disable in Firebase Auth using Cloud Functions
+        try {
+          const functions = getFunctions();
+          const disableUserFunction = httpsCallable(
+            functions,
+            "disableUserByUid"
+          );
+          await disableUserFunction({ uid: userId });
+          console.log("User disabled in authentication");
+        } catch (authError) {
+          console.error("Error disabling user auth:", authError);
+        }
+
+        // Update UI
         setUsers(
           users.map((user) =>
             user.id === userId ? { ...user, blocked: true } : user
           )
         );
-        setModalMessage("User has been blocked.");
+        setModalMessage("User has been blocked and can no longer log in.");
         setIsModalOpen(true);
       } catch (error) {
         console.error("Error blocking user:", error);
@@ -273,13 +322,26 @@ const AdminDashboard = () => {
 
   const handleUnblockUser = async (userId) => {
     try {
+      // 1. Update Firestore record
       await updateDoc(doc(db, "users", userId), { blocked: false });
+
+      // 2. Enable in Firebase Auth using Cloud Functions
+      try {
+        const functions = getFunctions();
+        const enableUserFunction = httpsCallable(functions, "enableUserByUid");
+        await enableUserFunction({ uid: userId });
+        console.log("User enabled in authentication");
+      } catch (authError) {
+        console.error("Error enabling user auth:", authError);
+      }
+
+      // Update UI
       setUsers(
         users.map((user) =>
           user.id === userId ? { ...user, blocked: false } : user
         )
       );
-      setModalMessage("User has been unblocked.");
+      setModalMessage("User has been unblocked and can now log in.");
       setIsModalOpen(true);
     } catch (error) {
       console.error("Error unblocking user:", error);
@@ -292,9 +354,27 @@ const AdminDashboard = () => {
     setSelectedUser(userId);
     setConfirmAction(() => async () => {
       try {
+        // 1. Delete from Firestore
         await deleteDoc(doc(db, "users", userId));
+
+        // 2. Delete from Firebase Auth using Cloud Functions
+        // This requires a Cloud Function since client-side code cannot delete other users
+        try {
+          const functions = getFunctions();
+          const deleteUserFunction = httpsCallable(
+            functions,
+            "deleteUserByUid"
+          );
+          await deleteUserFunction({ uid: userId });
+          console.log("User authentication record deleted");
+        } catch (authError) {
+          console.error("Error deleting user auth record:", authError);
+          // Still continue, as we've at least removed their data
+        }
+
+        // Update UI
         setUsers(users.filter((user) => user.id !== userId));
-        setModalMessage("User has been deleted.");
+        setModalMessage("User has been completely deleted from the system.");
         setIsModalOpen(true);
       } catch (error) {
         console.error("Error deleting user:", error);
@@ -664,37 +744,6 @@ const AdminDashboard = () => {
                   <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-purple-600 dark:text-purple-300"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                      Total Rides
-                    </h3>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {statistics.totalRides}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              {/* Pending Bookings */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <div className="p-6 flex items-center">
-                  <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-yellow-600 dark:text-yellow-300"
-                      fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
