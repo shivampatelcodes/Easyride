@@ -135,10 +135,11 @@ export const ChatProvider = ({ children }) => {
 
     const unsubscribe = onSnapshot(
       q,
-      (snapshot) => {
+      async (snapshot) => {
         const messages = [];
+        let hasUnreadMessages = false;
+
         snapshot.forEach((doc) => {
-          // Ensure we handle timestamp correctly
           const data = doc.data();
           const message = {
             id: doc.id,
@@ -146,6 +147,10 @@ export const ChatProvider = ({ children }) => {
             timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
           };
           messages.push(message);
+
+          if (!data.read && data.senderId !== auth.currentUser?.uid) {
+            hasUnreadMessages = true;
+          }
         });
 
         console.log(
@@ -153,12 +158,17 @@ export const ChatProvider = ({ children }) => {
         );
         setActiveMessages(messages);
 
-        // Mark messages as read
+        // If there are any unread messages, mark them as read:
         const user = auth.currentUser;
         if (!user) return;
 
-        messages.forEach(async (msg) => {
-          if (!msg.read && msg.senderId !== user.uid) {
+        if (hasUnreadMessages) {
+          // 1. Mark each unread message as read.
+          const unreadMessages = messages.filter(
+            (msg) => !msg.read && msg.senderId !== user.uid
+          );
+
+          for (const msg of unreadMessages) {
             try {
               await updateDoc(
                 doc(db, "chats", activeChat, "messages", msg.id),
@@ -166,12 +176,34 @@ export const ChatProvider = ({ children }) => {
                   read: true,
                 }
               );
-              console.log(`Marked message ${msg.id} as read`);
             } catch (error) {
-              console.error("Error marking message as read:", error);
+              console.error(`Error marking message ${msg.id} as read:`, error);
             }
           }
-        });
+
+          // 2. Update chat document to reflect that the last message has been read.
+          if (unreadMessages.length > 0) {
+            try {
+              const chatDoc = await getDoc(doc(db, "chats", activeChat));
+              if (chatDoc.exists()) {
+                const chatData = chatDoc.data();
+                // If last message was not sent by the current user, mark it read.
+                if (
+                  chatData.lastMessageSenderId &&
+                  chatData.lastMessageSenderId !== user.uid
+                ) {
+                  await updateDoc(doc(db, "chats", activeChat), {
+                    messagesRead: true,
+                    lastReadAt: serverTimestamp(),
+                  });
+                  console.log("Updated chat document to mark messages as read");
+                }
+              }
+            } catch (error) {
+              console.error("Error updating chat document:", error);
+            }
+          }
+        }
       },
       (error) => {
         console.error("Error fetching messages:", error);
@@ -266,14 +298,13 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  // Send a new message
+  // Update the sendMessage function to reset the messagesRead flag:
   const sendMessage = async (chatId, content) => {
     const user = auth.currentUser;
     if (!user) {
       console.error("Cannot send message: No authenticated user");
       return;
     }
-
     if (!content.trim()) {
       console.error("Cannot send empty message");
       return;
@@ -286,16 +317,14 @@ export const ChatProvider = ({ children }) => {
     );
 
     try {
-      // Find the chat to get participants
+      // Ensure the chat document exists.
       const chatDoc = await getDoc(doc(db, "chats", chatId));
       if (!chatDoc.exists()) {
         console.error("Chat not found");
         return;
       }
 
-      const chatData = chatDoc.data();
-
-      // Add message to messages subcollection
+      // Add a new message.
       const messageData = {
         content,
         senderId: user.uid,
@@ -309,12 +338,13 @@ export const ChatProvider = ({ children }) => {
       );
       console.log(`Message added with ID: ${messageRef.id}`);
 
-      // Update last message information in chat document
+      // Update the chat document: set lastMessage info and reset the messagesRead flag.
       await updateDoc(doc(db, "chats", chatId), {
         lastMessageAt: serverTimestamp(),
         lastMessage:
           content.substring(0, 50) + (content.length > 50 ? "..." : ""),
         lastMessageSenderId: user.uid,
+        messagesRead: false,
       });
       console.log("Chat document updated with last message info");
 

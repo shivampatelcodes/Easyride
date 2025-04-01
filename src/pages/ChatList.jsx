@@ -105,10 +105,10 @@ const ChatList = () => {
               />
             </svg>
             <p className="text-gray-600 dark:text-gray-300">
-              You don't have any conversations yet.
+              You don&apos;t have any conversations yet.
             </p>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-              {auth.currentUser?.displayName?.toLowerCase().includes("driver")
+              {auth.currentUser?.role === "driver"
                 ? "Passengers will be able to contact you about your rides."
                 : 'Start by searching for a ride and clicking on "Chat with Driver"'}
             </p>
