@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { getAuth } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -10,9 +10,12 @@ import {
   onSnapshot,
   updateDoc,
   doc,
+  getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import PropTypes from "prop-types";
+import { useChat } from "../context/ChatContext";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -20,12 +23,16 @@ const db = getFirestore(app);
 const Navbar = ({ role, setRole }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // Separate state for profile menu
   const [notifications, setNotifications] = useState([]);
   const [hasNew, setHasNew] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [firstName, setFirstName] = useState("");
   const notifRef = useRef(null);
+  const profileRef = useRef(null); // Separate ref for profile menu
   const navigate = useNavigate();
   const location = useLocation();
+  const { chats } = useChat();
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -36,6 +43,12 @@ const Navbar = ({ role, setRole }) => {
       setHasNew(false);
     }
     setIsNotifOpen((prev) => !prev);
+    setIsProfileOpen(false); // Close profile menu when opening notifications
+  };
+
+  const handleToggleProfile = () => {
+    setIsProfileOpen((prev) => !prev);
+    setIsNotifOpen(false); // Close notifications when opening profile menu
   };
 
   const handleNotificationClick = (notif) => {
@@ -43,6 +56,7 @@ const Navbar = ({ role, setRole }) => {
     navigate(notif.link);
   };
 
+  // Handle outside clicks for notifications
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -57,6 +71,21 @@ const Navbar = ({ role, setRole }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isNotifOpen]);
+
+  // Handle outside clicks for profile menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   // Helper function to check if a path is active
   const isActive = (path) => {
@@ -107,6 +136,35 @@ const Navbar = ({ role, setRole }) => {
       });
     } catch (error) {
       console.error("Error marking notification as read:", error);
+    }
+  };
+
+  // Calculate unread message count
+  const unreadChats = chats.filter(
+    (chat) => chat.lastMessageSenderId !== auth.currentUser?.uid
+  ).length;
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setFirstName(userData.firstName || user.email.split("@")[0]);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
   };
 
@@ -182,10 +240,29 @@ const Navbar = ({ role, setRole }) => {
                   My Bookings
                 </Link>
               )}
+
+              {/* Chat link - visible to both passengers and drivers */}
+              <Link
+                to="/chats"
+                className={`flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200 border-b-2 ${
+                  isActive("/chats")
+                    ? "border-blue-500 text-gray-900 dark:text-white"
+                    : "border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200"
+                }`}
+              >
+                <div className="relative flex items-center">
+                  <span>Messages</span>
+                  {unreadChats > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadChats}
+                    </span>
+                  )}
+                </div>
+              </Link>
             </nav>
           </div>
 
-          {/* Right side: Notifications and Settings */}
+          {/* Right side: Notifications and Profile */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <div className="relative" ref={notifRef}>
@@ -270,37 +347,56 @@ const Navbar = ({ role, setRole }) => {
               )}
             </div>
 
-            {/* Settings Button */}
-            <Link
-              to="/settings"
-              className={`p-2 rounded-full ${
-                isActive("/settings")
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              aria-label="Settings"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+            {/* Profile dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={handleToggleProfile}
+                className="flex items-center focus:outline-none"
+                aria-label="Open user menu"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                ></path>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                ></path>
-              </svg>
-            </Link>
+                <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center text-white">
+                  {firstName.charAt(0).toUpperCase()}
+                </div>
+              </button>
+
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20 border border-gray-200 dark:border-gray-700">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {firstName}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {auth.currentUser?.email}
+                    </p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      Your Profile
+                    </Link>
+                    <Link
+                      to="/settings"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        handleSignOut();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -421,6 +517,38 @@ const Navbar = ({ role, setRole }) => {
                       My Bookings
                     </Link>
                   )}
+
+                  {/* Chat link - made more prominent for mobile */}
+                  <Link
+                    to="/chats"
+                    className={`group flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                      isActive("/chats")
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                    onClick={toggleDrawer}
+                  >
+                    <svg
+                      className="mr-3 h-5 w-5 text-blue-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    Messages
+                    {unreadChats > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadChats}
+                      </span>
+                    )}
+                  </Link>
 
                   <Link
                     to="/settings"

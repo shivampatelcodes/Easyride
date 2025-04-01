@@ -19,100 +19,126 @@ import RoleRoute from "./components/RoleRoute";
 import VerifyEmail from "./pages/VerifyEmail";
 import VerifiedRoute from "./components/VerifiedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import ChatProvider from "./context/ChatContext"; // Import ChatProvider
+import ChatList from "./pages/ChatList"; // Import ChatList page
+import ChatWindow from "./pages/ChatWindow"; // Import ChatWindow page
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+    <ChatProvider>
+      <Router>
+        <Routes>
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* All protected routes require both authentication and email verification */}
-        <Route
-          path="/dashboard"
-          element={
-            <VerifiedRoute>
-              <RoleRoute allowedRoles={["passenger"]}>
-                <PassengerDashboard />
-              </RoleRoute>
-            </VerifiedRoute>
-          }
-        />
+          {/* All protected routes require both authentication and email verification */}
+          <Route path="/" element={<Navigate replace to="/dashboard" />} />
 
-        <Route
-          path="/driver-dashboard"
-          element={
-            <VerifiedRoute>
-              <ProfileCompleteRoute>
-                <RoleRoute allowedRoles={["driver"]}>
-                  <DriverDashboard />
+          {/* Add chat routes */}
+          <Route
+            path="/chats"
+            element={
+              <VerifiedRoute>
+                <ChatList />
+              </VerifiedRoute>
+            }
+          />
+
+          <Route
+            path="/chats/:id"
+            element={
+              <VerifiedRoute>
+                <ChatWindow />
+              </VerifiedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <VerifiedRoute>
+                <RoleRoute allowedRoles={["passenger"]}>
+                  <PassengerDashboard />
                 </RoleRoute>
-              </ProfileCompleteRoute>
-            </VerifiedRoute>
-          }
-        />
+              </VerifiedRoute>
+            }
+          />
 
-        <Route
-          path="/manage-bookings"
-          element={
-            <VerifiedRoute>
-              <ManageBookingsPage />
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/driver-dashboard"
+            element={
+              <VerifiedRoute>
+                <ProfileCompleteRoute>
+                  <RoleRoute allowedRoles={["driver"]}>
+                    <DriverDashboard />
+                  </RoleRoute>
+                </ProfileCompleteRoute>
+              </VerifiedRoute>
+            }
+          />
 
-        <Route
-          path="/profile"
-          element={
-            <VerifiedRoute>
-              <Profile />
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/manage-bookings"
+            element={
+              <VerifiedRoute>
+                <ManageBookingsPage />
+              </VerifiedRoute>
+            }
+          />
 
-        <Route
-          path="/passenger-bookings"
-          element={
-            <VerifiedRoute>
-              <PassengerBookingsPage />
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/profile"
+            element={
+              <VerifiedRoute>
+                <Profile />
+              </VerifiedRoute>
+            }
+          />
 
-        <Route
-          path="/search-results"
-          element={
-            <VerifiedRoute>
-              <SearchResults />
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/passenger-bookings"
+            element={
+              <VerifiedRoute>
+                <PassengerBookingsPage />
+              </VerifiedRoute>
+            }
+          />
 
-        <Route
-          path="/settings"
-          element={
-            <VerifiedRoute>
-              <Settings />
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/search-results"
+            element={
+              <VerifiedRoute>
+                <SearchResults />
+              </VerifiedRoute>
+            }
+          />
 
-        {/* Admin Dashboard Route */}
-        <Route
-          path="/admin-dashboard"
-          element={
-            <VerifiedRoute>
-              <RoleRoute allowedRoles={["admin"]}>
-                <AdminDashboard />
-              </RoleRoute>
-            </VerifiedRoute>
-          }
-        />
+          <Route
+            path="/settings"
+            element={
+              <VerifiedRoute>
+                <Settings />
+              </VerifiedRoute>
+            }
+          />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Router>
+          {/* Admin Dashboard Route */}
+          <Route
+            path="/admin-dashboard"
+            element={
+              <VerifiedRoute>
+                <RoleRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </RoleRoute>
+              </VerifiedRoute>
+            }
+          />
+
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Router>
+    </ChatProvider>
   );
 };
 

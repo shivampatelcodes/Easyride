@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -14,6 +14,7 @@ import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
 import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";
+import { useChat } from "../context/ChatContext";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -33,6 +34,8 @@ const DriverDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const navigate = useNavigate();
+  const { chats, loading: chatsLoading } = useChat();
+  const recentChats = chats.slice(0, 3); // Show only 3 most recent chats
 
   // Fetch user data and cities
   useEffect(() => {
@@ -212,6 +215,26 @@ const DriverDashboard = () => {
                         className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         Edit Profile
+                      </button>
+                      <button
+                        onClick={() => navigate("/chats")}
+                        className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
+                        </svg>
+                        Messages
                       </button>
                     </div>
                   </div>
@@ -421,6 +444,113 @@ const DriverDashboard = () => {
                     </span>
                   </li>
                 </ul>
+              </div>
+            </div>
+
+            {/* Recent Messages Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mt-6">
+              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
+                <h3 className="text-xl font-semibold text-white flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Recent Messages
+                </h3>
+              </div>
+
+              <div className="p-6">
+                {chatsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : recentChats.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentChats.map((chat) => (
+                      <Link
+                        to={`/chats/${chat.id}`}
+                        key={chat.id}
+                        className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-gray-800 dark:text-white">
+                              {chat.rideDetails.origin} to{" "}
+                              {chat.rideDetails.destination}
+                            </h4>
+                            {chat.lastMessage && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                {chat.lastMessageSenderId ===
+                                auth.currentUser?.uid
+                                  ? "You: "
+                                  : ""}
+                                {chat.lastMessage}
+                              </p>
+                            )}
+                          </div>
+                          {chat.lastMessageSenderId !==
+                            auth.currentUser?.uid && (
+                            <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                              New
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+
+                    <div className="text-center mt-4">
+                      <Link
+                        to="/chats"
+                        className="inline-flex items-center text-purple-600 dark:text-purple-400 hover:underline"
+                      >
+                        View all messages
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 ml-1"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    <p>No messages yet</p>
+                    <p className="text-sm mt-1">
+                      Passengers will be able to contact you about your rides.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

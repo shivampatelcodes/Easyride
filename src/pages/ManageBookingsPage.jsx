@@ -17,6 +17,7 @@ import Navbar from "../components/Navbar";
 import ConfirmationModal from "../components/ConfirmationModal";
 import Modal from "../components/Modal";
 import { sendRideAcceptedEmail } from "../utils/notifications"; // Import EmailJS helper
+import DriverChatButton from "../components/chat/DriverChatButton"; // Import the DriverChatButton component
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -393,6 +394,11 @@ const ManageBookingsPage = () => {
                       </button>
                     </div>
                   )}
+                  <DriverChatButton
+                    rideId={booking.rideId}
+                    passengerId={booking.passengerId}
+                    className="ml-2"
+                  />
                 </div>
               </div>
             ))}

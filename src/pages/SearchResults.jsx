@@ -16,6 +16,7 @@ import { getAuth } from "firebase/auth";
 import { app } from "../firebaseConfig";
 import Navbar from "../components/Navbar";
 import Modal from "../components/Modal";
+import ChatButton from "../components/chat/ChatButton"; // Add this import
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -429,25 +430,17 @@ const SearchResults = () => {
                   </div>
 
                   {/* Book button */}
-                  <button
-                    onClick={() => handleBookRide(ride)}
-                    className="w-full flex justify-center items-center px-4 py-3 text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-md transform transition hover:-translate-y-0.5"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
+                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+                    <button
+                      onClick={() => handleBookRide(ride)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     >
-                      <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Book This Ride
-                  </button>
+                      Book Seat
+                    </button>
+
+                    {/* Add the ChatButton component */}
+                    <ChatButton rideId={ride.id} driverId={ride.driverId} />
+                  </div>
                 </div>
               </div>
             ))}
